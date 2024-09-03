@@ -16,11 +16,24 @@ datasource db {
 model KRC20Transaction {
   id        Int      @id @default(autoincrement())
   txHash    String   @unique
-  ticker    String
-  from      String
-  to        String
-  amount    String
-  blockTime DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  op        String
+  tick      String
+  amt        String?
+  from       String
+  to         String
+  opScore    String
+  feeRev     String
+  txAccept   String
+  opAccept   String
+  opError    String?
+  checkpoint String?
+  mtsAdd     String
+  mtsMod     String
+  max        String?
+  lim        String?
+  pre        String?
+  dec        String?
+  blockTime  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
