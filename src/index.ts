@@ -7,7 +7,7 @@ import { getTransactions } from './services/transactionService';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
 
@@ -47,7 +47,7 @@ app.get('/api/transactions', async (req: Request, res: Response) => {
   }
 });
 
-app.listen(port, async () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
-  await startScheduler();
+  startScheduler();
 });
