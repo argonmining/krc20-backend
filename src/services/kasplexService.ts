@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -33,7 +34,9 @@ interface Transaction {
 
 export async function fetchTokenList(): Promise<TokenInfo[]> {
   try {
-    const response = await axios.get<{ result: TokenInfo[] } >('https://api.kasplex.org/v1/krc20/tokenlist');
+    const response = await axios.get<{ result: TokenInfo[] }>('https://api.kasplex.org/v1/krc20/tokenlist');
+    console.log(`Fetched ${response.data.result.length} tokens from API:`);
+    response.data.result.forEach(token => console.log(`- ${token.tick}`));
     return response.data.result;
   } catch (error) {
     console.error('Error fetching token list:', error);
@@ -86,7 +89,15 @@ export async function storeTransactions(transactions: Transaction[]): Promise<vo
         },
       });
     } catch (error) {
-      console.error(`Error storing transaction ${tx.hashRev}:`, error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          console.log(`Transaction ${tx.hashRev} already exists, skipping.`);
+        } else {
+          console.error(`Prisma error storing transaction ${tx.hashRev}:`, error);
+        }
+      } else {
+        console.error(`Unexpected error storing transaction ${tx.hashRev}:`, error);
+      }
     }
   }
 }
@@ -96,8 +107,9 @@ export async function fetchAllHistoricalData(): Promise<void> {
   const tokens = await fetchTokenList();
   console.log(`Found ${tokens.length} tokens to process.`);
 
+  let processedTokens = 0;
   for (const token of tokens) {
-    console.log(`Processing token: ${token.tick}`);
+    console.log(`Processing token ${++processedTokens}/${tokens.length}: ${token.tick}`);
     const latestTransaction = await prisma.kRC20Transaction.findFirst({
       where: { tick: token.tick },
       orderBy: { blockTime: 'desc' },
@@ -120,7 +132,7 @@ export async function fetchAllHistoricalData(): Promise<void> {
     } while (next);
     console.log(`Completed processing for ${token.tick}. Total new transactions: ${totalNewTransactions}`);
   }
-  console.log("Finished fetching all historical data.");
+  console.log(`Finished fetching all historical data. Processed ${processedTokens}/${tokens.length} tokens.`);
 }
 
 export async function fetchRecentData(): Promise<void> {

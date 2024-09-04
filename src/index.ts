@@ -7,6 +7,7 @@ import { getTransactions } from './services/transactionService';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
