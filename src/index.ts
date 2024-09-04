@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { startScheduler } from './services/scheduler';
 import { getTransactions } from './services/transactionService';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ app.set('trust proxy', 1);
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
+app.use(cors());
 
 // Rate limiting
 const apiLimiter = rateLimit({
