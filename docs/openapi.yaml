@@ -1,0 +1,188 @@
+openapi: 3.0.0
+info:
+  title: KRC20 Transaction API
+  description: API for querying KRC20 transaction data
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: 
+    email: 
+servers:
+  - url: 
+    description: Production server
+paths:
+  /api/transactions:
+    get:
+      summary: Retrieve KRC20 transactions
+      description: Fetch KRC20 transactions with optional filtering and pagination
+      parameters:
+        - in: query
+          name: txHash
+          schema:
+            type: string
+          description: Filter by transaction hash
+        - in: query
+          name: tick
+          schema:
+            type: string
+          description: Filter by token tick
+        - in: query
+          name: from
+          schema:
+            type: string
+          description: Filter by sender address
+        - in: query
+          name: to
+          schema:
+            type: string
+          description: Filter by recipient address
+        - in: query
+          name: op
+          schema:
+            type: string
+          description: Filter by operation type
+        - in: query
+          name: opError
+          schema:
+            type: string
+          description: Filter by operation error
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10000
+            maximum: 10000
+          description: Number of records per page
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Transactions
+
+components:
+  schemas:
+    Transaction:
+      type: object
+      properties:
+        txHash:
+          type: string
+          description: Transaction hash
+        op:
+          type: string
+          description: Operation type
+        tick:
+          type: string
+          description: Token tick
+        amt:
+          type: string
+          description: Transaction amount
+        from:
+          type: string
+          description: Sender address
+        to:
+          type: string
+          description: Recipient address
+        opScore:
+          type: string
+          description: Operation score
+        feeRev:
+          type: string
+          description: Fee revenue
+        txAccept:
+          type: string
+          description: Transaction acceptance status
+        opAccept:
+          type: string
+          description: Operation acceptance status
+        opError:
+          type: string
+          description: Operation error (if any)
+        checkpoint:
+          type: string
+          description: Checkpoint
+        mtsAdd:
+          type: string
+          description: Timestamp of addition
+        mtsMod:
+          type: string
+          description: Timestamp of modification
+        max:
+          type: string
+          description: Maximum value
+        lim:
+          type: string
+          description: Limit value
+        pre:
+          type: string
+          description: Precision
+        dec:
+          type: string
+          description: Decimal places
+        blockTime:
+          type: string
+          format: date-time
+          description: Block timestamp
+    
+    TransactionResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+        pagination:
+          type: object
+          properties:
+            currentPage:
+              type: integer
+              description: Current page number
+            totalPages:
+              type: integer
+              description: Total number of pages
+            totalCount:
+              type: integer
+              description: Total number of transactions
+            hasNextPage:
+              type: boolean
+              description: Whether there is a next page
+            hasPreviousPage:
+              type: boolean
+              description: Whether there is a previous page
+    
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+tags:
+  - name: Transactions
+    description: KRC20 transaction operations
+
+externalDocs:
+  description: KRC20 Backend GitHub Repository
+  url: https://github.com/argonmining/krc20-backend
