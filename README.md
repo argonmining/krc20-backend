@@ -16,6 +16,7 @@ This is the backend service for KRC20 transaction data. It fetches and stores tr
 - npm
 - PostgreSQL database
 - PM2 (for production deployment)
+- Nginx (for reverse proxy)
 
 ## Installation
 
@@ -58,9 +59,11 @@ To build the application for production:
 npm run build
 ```
 
-## Production Deployment with PM2
+## Production Deployment
 
-1. Install PM2 globally if you haven't already:
+### PM2 Setup
+
+1. Install PM2 globally:
    ```
    npm install -g pm2
    ```
@@ -95,6 +98,65 @@ npm run build
    pm2 save
    ```
 
+### Nginx Setup
+
+1. Install Nginx:
+   ```
+   sudo apt update
+   sudo apt install nginx
+   ```
+
+2. Create a new Nginx configuration file:
+   ```
+   sudo nano /etc/nginx/sites-available/subdomain.domain.tld
+   ```
+
+3. Add the following configuration:
+   ```nginx
+   server {
+       listen 80;
+       server_name subdomain.domain.tld;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+4. Create a symbolic link to enable the site:
+   ```
+   sudo ln -s /etc/nginx/sites-available/subdomain.domain.tld /etc/nginx/sites-enabled/
+   ```
+
+5. Test Nginx configuration:
+   ```
+   sudo nginx -t
+   ```
+
+6. If the test is successful, reload Nginx:
+   ```
+   sudo systemctl reload nginx
+   ```
+
+7. Ensure Nginx starts on boot:
+   ```
+   sudo systemctl enable nginx
+   ```
+
+### DNS Setup
+
+1. In your DNS management panel, create an A record:
+   - Host: {subdomain}
+   - Points to: Your server's IP address
+   - TTL: 3600 (or as preferred)
+
+2. Wait for DNS propagation (can take up to 48 hours, but often much faster)
+
 ## API Endpoints
 
 ### GET /api/transactions
@@ -111,11 +173,6 @@ Query Parameters:
 - `page`: Page number for pagination (default: 1)
 - `limit`: Number of records per page (default: 10000, max: 10000)
 
-Example:
-```
-http://your-server-ip:3000/api/transactions?tick=KOIN&page=1&limit=100
-```
-
 ## Scheduled Tasks
 
 The application runs the following scheduled tasks:
@@ -123,4 +180,3 @@ The application runs the following scheduled tasks:
 - Fetches all historical data on startup
 - Removes duplicate transactions on startup
 - Polls the Kasplex API for new transactions every hour
-
