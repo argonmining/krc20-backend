@@ -72,19 +72,19 @@ npm run build
    Create a file named `ecosystem.config.js` in the root directory with the following content:
    ```javascript
    module.exports = {
-     apps: [{
-       name: "krc20-backend",
-       script: "dist/index.js",
-       env: {
-         NODE_ENV: "production",
-       },
-       instances: "max",
-       exec_mode: "cluster",
-       autorestart: true,
-       watch: false,
-       max_memory_restart: "1G",
-     }]
-   };
+    apps: [{
+      name: "krc20-backend",
+      script: "dist/index.js",
+      env: {
+        NODE_ENV: "production",
+      },
+      instances: 1,
+      exec_mode: "fork", 
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "1G",
+    }]
+  };
    ```
 
 3. Start the application with PM2:

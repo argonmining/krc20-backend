@@ -5,8 +5,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
       },
-      instances: "max",
-      exec_mode: "cluster",
+      instances: 1,  // This ensures only one instance
+      exec_mode: "fork",  // Change this to "fork" for a single instance
       autorestart: true,
       watch: false,
       max_memory_restart: "1G",
