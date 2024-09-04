@@ -36,4 +36,10 @@ model KRC20Transaction {
   blockTime  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([tick])
+  @@index([from])
+  @@index([to])
+  @@index([op])
+  @@index([blockTime])
 }

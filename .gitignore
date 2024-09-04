@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 prisma
+.DS_Store
+*.log
