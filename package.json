@@ -19,7 +19,8 @@
     "express": "^4.17.1",
     "express-rate-limit": "^7.4.0",
     "node-cache": "^5.1.2",
-    "node-cron": "^3.0.0"
+    "node-cron": "^3.0.0",
+    "pg": "^8.12.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -27,6 +28,7 @@
     "@types/node": "^16.11.12",
     "@types/node-cache": "^4.2.5",
     "@types/node-cron": "^3.0.7",
+    "@types/pg": "^8.11.8",
     "nodemon": "^2.0.15",
     "prisma": "^5.19.1",
     "ts-node": "^10.4.0",

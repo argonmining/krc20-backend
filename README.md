@@ -173,6 +173,17 @@ Query Parameters:
 - `page`: Page number for pagination (default: 1)
 - `limit`: Number of records per page (default: 10000, max: 10000)
 
+### GET /api/mint-data
+
+Fetches KRC20 mint transactions with filtering and pagination.
+
+Query Parameters:
+- `startDate`: Start date for filtering (inclusive, required)
+- `endDate`: End date for filtering (inclusive, required)
+- `tick`: Filter by token tick (optional)
+- `page`: Page number for pagination (default: 1)
+- `limit`: Number of records per page (default: 100, max: 1000)
+
 ## Scheduled Tasks
 
 The application runs the following scheduled tasks:

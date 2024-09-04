@@ -4,11 +4,12 @@ import rateLimit from 'express-rate-limit';
 import { startScheduler } from './services/scheduler';
 import { getTransactions } from './services/transactionService';
 import cors from 'cors';
+import { getMintData } from './controllers/mintDataController';
 
 dotenv.config();
 
 const app = express();
-app.set('trust proxy', 1);
+app.set('trust proxy', 1); // Add this line
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
@@ -50,7 +51,9 @@ app.get('/api/transactions', async (req: Request, res: Response) => {
   }
 });
 
-app.listen(port, '0.0.0.0', () => {
+app.get('/api/mint-data', getMintData);
+
+app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   startScheduler();
 });

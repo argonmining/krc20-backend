@@ -81,6 +81,67 @@ paths:
       tags:
         - Transactions
 
+  /api/mint-data:
+    get:
+      summary: Retrieve KRC20 mint data
+      description: Fetch KRC20 mint data with filtering and pagination
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+          required: true
+          description: Start date for filtering (inclusive)
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+          required: true
+          description: End date for filtering (inclusive)
+        - in: query
+          name: tick
+          schema:
+            type: string
+          description: Filter by token tick (optional)
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+          description: Number of records per page
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MintTransaction'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Transactions
+
 components:
   schemas:
     Transaction:
@@ -178,6 +239,29 @@ components:
           type: integer
         message:
           type: string
+
+    MintTransaction:
+      type: object
+      properties:
+        txHash:
+          type: string
+          description: Transaction hash
+        tick:
+          type: string
+          description: Token tick
+        amt:
+          type: string
+          description: Minted amount
+        from:
+          type: string
+          description: Sender address
+        to:
+          type: string
+          description: Recipient address
+        blockTime:
+          type: string
+          format: date-time
+          description: Block timestamp
 
 tags:
   - name: Transactions
