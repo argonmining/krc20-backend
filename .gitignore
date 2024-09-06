@@ -4,3 +4,4 @@ dist
 prisma
 .DS_Store
 *.log
+prisma/migrations
