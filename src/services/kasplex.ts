@@ -19,6 +19,11 @@ interface TokenListItem {
   mtsAdd: string;
 }
 
+interface Holder {
+  address: string;
+  amount: string;
+}
+
 interface TokenInfo {
   tick: string;
   max: string;
@@ -35,6 +40,7 @@ interface TokenInfo {
   holderTotal: number;
   transferTotal: number;
   mintTotal: number;
+  holder: Holder[];
 }
 
 interface Transaction {
@@ -92,6 +98,16 @@ async function fetchTransactions(tick: string, next?: string): Promise<Transacti
   );
 }
 
+async function fetchTokenHoldings(address: string): Promise<{ tick: string; balance: string }[]> {
+  return retryApiCall(async () => {
+    const response = await axios.get(`https://api.kasplex.org/v1/krc20/address/${address}/tokenlist`);
+    return response.data.result.map((item: { tick: string; balance: string }) => ({
+      tick: item.tick,
+      balance: item.balance,
+    }));
+  });
+}
+
 async function retryApiCall<T>(
   apiCall: () => Promise<T>,
   maxRetries = 3,
@@ -121,11 +137,14 @@ async function updateDatabase() {
   const lastUpdate = await prisma.lastUpdate.findFirst();
   const lastUpdateTime = lastUpdate ? lastUpdate.timestamp : new Date(0);
 
+  // Step 1: Fetch token list and update database
   const tokenList = await fetchTokenList();
   logger.info(`Fetched ${tokenList.length} tokens from Kasplex API`);
 
   for (const token of tokenList) {
     logger.info(`Updating token: ${token.tick}`);
+
+    // Step 2: Fetch token info and update database
     const tokenInfo = await fetchTokenInfo(token.tick);
     logger.info(`Fetched token info for ${token.tick}: mintTotal = ${tokenInfo.mintTotal}`);
     
@@ -154,6 +173,54 @@ async function updateDatabase() {
       create: tokenData,
     });
 
+    // Step 3: Fetch token holdings and update database
+    if (tokenInfo.holder && tokenInfo.holder.length > 0) {
+      for (const holder of tokenInfo.holder) {
+        const tokenHoldings = await fetchTokenHoldings(holder.address);
+        const balances = tokenHoldings.map(holding => ({
+          tokenTick: holding.tick,
+          balance: holding.balance,
+        }));
+
+        // Ensure all tokenTick values exist in the Token table
+        const tokenTicks = balances.map(balance => balance.tokenTick);
+        const existingTokens = await prisma.token.findMany({
+          where: {
+            tick: {
+              in: tokenTicks,
+            },
+          },
+          select: {
+            tick: true,
+          },
+        });
+
+        const existingTokenTicks = new Set(existingTokens.map(token => token.tick));
+        const validBalances = balances.filter(balance => existingTokenTicks.has(balance.tokenTick));
+
+        if (validBalances.length > 0) {
+          await prisma.holder.upsert({
+            where: { address: holder.address },
+            update: {
+              balances: {
+                deleteMany: {},
+                create: validBalances,
+              },
+            },
+            create: {
+              address: holder.address,
+              balances: {
+                create: validBalances,
+              },
+            },
+          });
+        } else {
+          logger.warn(`No valid balances for holder ${holder.address} for token ${token.tick}`);
+        }
+      }
+    }
+
+    // Step 4: Fetch transactions and update database
     let next: string | undefined;
     let fetchedTransactions = 0;
     let batchCount = 0;
@@ -175,9 +242,10 @@ async function updateDatabase() {
         });
 
         if (existingTransaction) {
-          logger.info(`Found existing transaction ${tx.hashRev} for ${token.tick}. Stopping fetch for this token.`);
-          shouldContinue = false;
-          break;
+          const historicalUpdate = process.env.HISTORICAL_UPDATE;
+          shouldContinue = historicalUpdate === "true";
+          logger.info(`Found existing transaction ${tx.hashRev} for ${token.tick}. HISTORICAL_UPDATE is set to ${historicalUpdate}. shouldContinue is set to ${shouldContinue}. ${shouldContinue ? 'Continuing fetch for this token.' : 'Stopping fetch for this token.'}`);
+          if (!shouldContinue) break;
         }
 
         const transactionData: Transaction = {
@@ -202,13 +270,14 @@ async function updateDatabase() {
           dec: tx.dec || null
         };
 
-        await prisma.transaction.create({
-          data: transactionData,
+        await prisma.transaction.upsert({
+          where: { hashRev: tx.hashRev },
+          update: transactionData,
+          create: transactionData,
         });
 
         fetchedTransactions++;
       }
-
       if (!shouldContinue) break;
 
       next = transactions.length === 50 ? transactions[transactions.length - 1].opScore : undefined;
@@ -226,6 +295,42 @@ async function updateDatabase() {
   });
 
   logger.info(`Database update completed. Total new transactions across all tokens: ${totalNewTransactions}`);
+
+  // Call the cleanup function
+  await removeDuplicates();
+}
+
+async function removeDuplicates() {
+  logger.info('Starting duplicate removal process');
+
+  // Remove duplicate tokens
+  const duplicateTokens = await prisma.$executeRaw`
+    DELETE FROM "Token" t1
+    USING "Token" t2
+    WHERE t1.ctid < t2.ctid
+    AND t1."tick" = t2."tick"
+  `;
+  logger.info(`Removed ${duplicateTokens} duplicate tokens`);
+
+  // Remove duplicate transactions
+  const duplicateTransactions = await prisma.$executeRaw`
+    DELETE FROM "Transaction" t1
+    USING "Transaction" t2
+    WHERE t1.ctid < t2.ctid
+    AND t1."hashRev" = t2."hashRev"
+  `;
+  logger.info(`Removed ${duplicateTransactions} duplicate transactions`);
+
+  // Remove duplicate holders
+  const duplicateHolders = await prisma.$executeRaw`
+    DELETE FROM "Holder" t1
+    USING "Holder" t2
+    WHERE t1.ctid < t2.ctid
+    AND t1."address" = t2."address"
+  `;
+  logger.info(`Removed ${duplicateHolders} duplicate holders`);
+
+  logger.info('Duplicate removal process completed');
 }
 
 export { updateDatabase };

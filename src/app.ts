@@ -137,7 +137,7 @@ app.listen(port, async () => {
   await runDatabaseUpdate();
 });
 
-const UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
+const UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
 
 // Run the update function every 30 minutes
 setInterval(async () => {
@@ -145,14 +145,14 @@ setInterval(async () => {
     await updateDatabase();
     console.log('Database update completed successfully');
     
-    // Log time until next update every 5 minutes
+    // Log time until next update every 10 minutes
     const logInterval = setInterval(() => {
       const now = new Date();
       const nextUpdate = new Date(Math.ceil(now.getTime() / UPDATE_INTERVAL) * UPDATE_INTERVAL);
       const timeUntilNextUpdate = nextUpdate.getTime() - now.getTime();
       const minutesUntilNextUpdate = Math.round(timeUntilNextUpdate / 60000);
       logger.info(`Time until next database update: ${minutesUntilNextUpdate} minutes`);
-    }, 5 * 60 * 1000); // Log every 5 minutes
+    }, 10 * 60 * 1000); // Log every 10 minutes
 
     // Clear the logging interval just before the next update
     setTimeout(() => clearInterval(logInterval), UPDATE_INTERVAL - 1000);
@@ -196,6 +196,34 @@ app.get('/api/token/:tick', async (req, res) => {
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
+  }
+});
+
+app.get('/api/topHolders', async (req, res) => {
+  try {
+    const holders = await prisma.holder.findMany({
+      include: {
+        balances: {
+          select: {
+            tokenTick: true,
+            balance: true,
+          },
+        },
+      },
+    });
+
+    const formattedHolders = holders.map(holder => ({
+      address: holder.address,
+      balances: holder.balances.map(balance => ({
+        tick: balance.tokenTick,
+        balance: balance.balance,
+      })),
+    }));
+
+    res.json(formattedHolders);
+  } catch (error) {
+    logger.error('Error fetching top holders:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

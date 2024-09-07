@@ -6,3 +6,4 @@ prisma
 *.log
 prisma/migrations
 ecosystem.config.js
+openapi.yaml
