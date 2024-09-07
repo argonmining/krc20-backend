@@ -5,5 +5,5 @@ prisma
 .DS_Store
 *.log
 prisma/migrations
-ecosystem.config.js
 openapi.yaml
+ecosystem.config.js
