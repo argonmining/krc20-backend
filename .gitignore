@@ -7,3 +7,4 @@ prisma
 prisma/migrations
 openapi.yaml
 ecosystem.config.js
+package-lock.json
