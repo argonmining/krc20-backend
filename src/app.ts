@@ -29,6 +29,42 @@ interface TransactionQuery {
   endDate: string;
 }
 
+let isUpdating = false;
+
+async function runDatabaseUpdate() {
+  if (isUpdating) {
+    logger.warn('Database update is already running');
+    return;
+  }
+
+  try {
+    isUpdating = true;
+    await updateDatabase();
+    logger.info('Database update completed successfully');
+  } catch (error) {
+    logger.error('Error updating database:', error);
+  } finally {
+    isUpdating = false;
+  }
+}
+
+const UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
+
+// Run the update function every hour if HISTORICAL_UPDATE is false
+setInterval(async () => {
+  if (process.env.HISTORICAL_UPDATE === 'false' && !isUpdating) {
+    await runDatabaseUpdate();
+  }
+}, UPDATE_INTERVAL);
+
+// Initial log for time until first update
+const initialNextUpdate = new Date(Math.ceil(new Date().getTime() / UPDATE_INTERVAL) * UPDATE_INTERVAL);
+const initialTimeUntilNextUpdate = initialNextUpdate.getTime() - new Date().getTime();
+const initialMinutesUntilNextUpdate = Math.round(initialTimeUntilNextUpdate / 60000);
+logger.info(`Time until first database update: ${initialMinutesUntilNextUpdate} minutes`);
+
+runDatabaseUpdate();
+
 app.get('/api/mint-Totals', async (req, res) => {
   try {
     const { startDate, endDate } = z.object({
@@ -134,47 +170,23 @@ app.get('/health', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Server is running on port ${port}`);
-  await runDatabaseUpdate();
 });
 
-const UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
-
-// Run the update function every 30 minutes
-setInterval(async () => {
-  try {
-    await updateDatabase();
-    console.log('Database update completed successfully');
-    
-    // Log time until next update every 10 minutes
-    const logInterval = setInterval(() => {
-      const now = new Date();
-      const nextUpdate = new Date(Math.ceil(now.getTime() / UPDATE_INTERVAL) * UPDATE_INTERVAL);
-      const timeUntilNextUpdate = nextUpdate.getTime() - now.getTime();
-      const minutesUntilNextUpdate = Math.round(timeUntilNextUpdate / 60000);
-      logger.info(`Time until next database update: ${minutesUntilNextUpdate} minutes`);
-    }, 10 * 60 * 1000); // Log every 10 minutes
-
-    // Clear the logging interval just before the next update
-    setTimeout(() => clearInterval(logInterval), UPDATE_INTERVAL - 1000);
-  } catch (error) {
-    console.error('Error updating database:', error);
-  }
-}, UPDATE_INTERVAL);
-
-// Initial log for time until first update
-const initialNextUpdate = new Date(Math.ceil(new Date().getTime() / UPDATE_INTERVAL) * UPDATE_INTERVAL);
-const initialTimeUntilNextUpdate = initialNextUpdate.getTime() - new Date().getTime();
-const initialMinutesUntilNextUpdate = Math.round(initialTimeUntilNextUpdate / 60000);
-logger.info(`Time until first database update: ${initialMinutesUntilNextUpdate} minutes`);
-
 app.post('/api/updateDatabase', async (req, res) => {
+  if (isUpdating) {
+    return res.status(400).json({ error: 'Database update is already running' });
+  }
+
   try {
+    isUpdating = true;
     await updateDatabase();
     logger.info('Manual database update completed successfully');
     res.json({ message: 'Database update completed successfully' });
   } catch (error) {
     logger.error('Error updating database:', error);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    isUpdating = false;
   }
 });
 
@@ -226,12 +238,3 @@ app.get('/api/topHolders', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-async function runDatabaseUpdate() {
-  try {
-    await updateDatabase();
-    logger.info('Database update completed successfully');
-  } catch (error) {
-    logger.error('Error updating database:', error);
-  }
-}
