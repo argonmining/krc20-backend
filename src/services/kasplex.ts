@@ -324,7 +324,7 @@ async function removeDuplicates() {
     WHERE t1.ctid < t2.ctid
     AND t1."tick" = t2."tick"
   `;
-  logger.info(`Removed ${duplicateTokens} duplicate tokens`);
+  logger.warn(`Removed ${duplicateTokens} duplicate tokens`);
 
   // Remove duplicate transactions
   const duplicateTransactions = await prisma.$executeRaw`
@@ -333,7 +333,7 @@ async function removeDuplicates() {
     WHERE t1.ctid < t2.ctid
     AND t1."hashRev" = t2."hashRev"
   `;
-  logger.info(`Removed ${duplicateTransactions} duplicate transactions`);
+  logger.warn(`Removed ${duplicateTransactions} duplicate transactions`);
 
   // Remove duplicate holders
   const duplicateHolders = await prisma.$executeRaw`
@@ -342,7 +342,7 @@ async function removeDuplicates() {
     WHERE t1.ctid < t2.ctid
     AND t1."address" = t2."address"
   `;
-  logger.info(`Removed ${duplicateHolders} duplicate holders`);
+  logger.warn(`Removed ${duplicateHolders} duplicate holders`);
 
   logger.warn('Duplicate removal process completed');
 }
