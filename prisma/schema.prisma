@@ -1,0 +1,74 @@
+generator client {
+provider = "prisma-client-js"
+}
+
+datasource db {
+provider = "postgresql"
+url      = env("DATABASE_URL")
+}
+
+model Token {
+tick          String   @id
+max           String
+lim           String
+pre           String
+to            String
+dec           String
+minted        String
+opScoreAdd    String
+opScoreMod    String
+state         String
+hashRev       String
+mtsAdd        String
+holderTotal   Int
+transferTotal Int
+mintTotal     Int
+lastUpdated   DateTime
+transactions  Transaction[]
+balances      Balance[]
+}
+
+model Transaction {
+hashRev    String @id
+p          String
+op         String
+tick       String
+amt        String?
+from       String
+to         String
+opScore    String
+feeRev     String
+txAccept   String
+opAccept   String
+opError    String
+checkpoint String
+mtsAdd     String
+mtsMod     String
+max        String?
+lim        String?
+pre        String?
+dec        String?
+token      Token   @relation(fields: [tick], references: [tick])
+
+@@index([tick, mtsAdd])
+}
+
+model LastUpdate {
+id        Int      @id @default(1)
+timestamp DateTime
+}
+
+model Holder {
+id        Int      @id @default(autoincrement())
+address   String   @unique
+balances  Balance[]
+}
+
+model Balance {
+id        Int      @id @default(autoincrement())
+balance   String
+holderId  Int
+holder    Holder   @relation(fields: [holderId], references: [id])
+tokenTick String
+token     Token    @relation(fields: [tokenTick], references: [tick])
+}

@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
-import { updateDatabase } from './services/kasplex';
+import { updateDatabase, updateDatabaseForTicker } from './services/kasplex';
 import logger from './utils/logger';
 import { z } from 'zod';
 import cors from 'cors';
@@ -104,6 +104,49 @@ app.get('/api/mint-Totals', async (req, res) => {
     res.json(mintTotals);
   } catch (error) {
     logger.error('Error fetching mint totals:', error);
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: 'Invalid input', details: error.errors });
+    } else if (error instanceof Error) {
+      res.status(500).json({ error: 'Internal server error', message: error.message });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+app.get('/api/mintsovertime', async (req, res) => {
+  try {
+    const { tick } = z.object({
+      tick: tickSchema,
+    }).parse(req.query);
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        tick,
+        op: 'mint',
+      },
+      select: {
+        mtsAdd: true,
+      },
+    });
+
+    const mintCounts = transactions.reduce((acc: Record<string, number>, { mtsAdd }) => {
+      const date = new Date(parseInt(mtsAdd)).toISOString().split('T')[0];
+      if (!acc[date]) {
+        acc[date] = 0;
+      }
+      acc[date]++;
+      return acc;
+    }, {});
+
+    const result = Object.entries(mintCounts).map(([date, count]) => ({
+      date,
+      count,
+    }));
+
+    res.json(result);
+  } catch (error) {
+    logger.error('Error fetching mints over time:', error);
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: 'Invalid input', details: error.errors });
     } else if (error instanceof Error) {
@@ -236,5 +279,22 @@ app.get('/api/topHolders', async (req, res) => {
   } catch (error) {
     logger.error('Error fetching top holders:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/updateDatabaseForTicker', async (req, res) => {
+  try {
+    const { tick } = z.object({ tick: tickSchema }).parse(req.body);
+    await updateDatabaseForTicker(tick);
+    res.json({ message: `Database update for ticker ${tick} completed successfully` });
+  } catch (error) {
+    logger.error(`Error updating database for ticker:`, error);
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: 'Invalid input', details: error.errors });
+    } else if (error instanceof Error) {
+      res.status(500).json({ error: 'Internal server error', message: error.message });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 });
