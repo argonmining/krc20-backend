@@ -123,7 +123,7 @@ async function fetchAndStorePriceData() {
 
     const kasFloorPrice = priceData['KAS'].floor_price;
 
-    // Filter out the KAS token and iterate over the remaining tokens
+    // Iterate over the tokens from the price data API
     for (const tick in priceData) {
       if (tick === 'KAS') continue;
 
@@ -132,15 +132,34 @@ async function fetchAndStorePriceData() {
       const valueUSD = valueKAS * kasFloorPrice; // Convert to USD
       const change24h = tokenData.change_24h;
 
-      // Check if the token exists in the database
-      const tokenExists = await prisma.token.findUnique({
+      // Check if the token exists in the Token table
+      let tokenExists = await prisma.token.findUnique({
         where: { tick }
       });
 
-      // Skip inserting price data if the token doesn't exist
+      // If the token doesn't exist, create it in the Token table
       if (!tokenExists) {
-        logger.warn(`Token ${tick} does not exist in the Token table. Skipping price data insertion.`);
-        continue;
+        logger.warn(`Token ${tick} does not exist in the Token table. Adding it now.`);
+        tokenExists = await prisma.token.create({
+          data: {
+            tick,
+            max: "Unknown",  // Adjust these fields as necessary
+            lim: "Unknown",
+            pre: "Unknown",
+            to: "Unknown",
+            dec: "0",
+            minted: "0",
+            opScoreAdd: "0",
+            opScoreMod: "0",
+            state: "Unknown",
+            hashRev: "0",
+            mtsAdd: "0",
+            holderTotal: 0,
+            transferTotal: 0,
+            mintTotal: 0,
+            lastUpdated: new Date(),
+          },
+        });
       }
 
       // Store the price data in the database
@@ -150,8 +169,8 @@ async function fetchAndStorePriceData() {
           timestamp: new Date(),
           valueKAS,
           valueUSD,
-          change24h
-        }
+          change24h,
+        },
       });
 
       logger.info(`Stored price data for ${tick}: KAS value = ${valueKAS}, USD value = ${valueUSD}`);
@@ -160,6 +179,7 @@ async function fetchAndStorePriceData() {
     logger.error('Error fetching or storing price data:', error);
   }
 }
+
 
 
 async function fetchTokenHoldings(address: string): Promise<{ tick: string; balance: string }[]> {
