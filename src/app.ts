@@ -236,7 +236,6 @@ app.post('/api/updateDatabase', async (req, res) => {
   try {
     isUpdating = true;
     await updateDatabase();
-    logger.info('Manual database update completed successfully');
     res.json({ message: 'Database update completed successfully' });
   } catch (error) {
     logger.error('Error updating database:', error);
@@ -298,24 +297,17 @@ app.get('/api/topHolders', async (req, res) => {
 app.post('/api/updateDatabaseForTicker', async (req, res) => {
   try {
     const { tick } = z.object({ tick: tickSchema }).parse(req.body);
-    if (process.env.UPDATING_SINGLE_TICKER === 'true') {
-      return res.status(400).json({ error: 'Another ticker update is already in progress' });
+    if (isUpdating) {
+      return res.status(400).json({ error: 'Another update is already running' });
     }
-    // Respond immediately
-    res.json({ message: `Database update for ticker ${tick} started successfully` });
 
-    // Process the update in the background
-    updateDatabaseForTicker(tick).catch(error => {
-      logger.error(`Error updating database for ticker ${tick}:`, error);
-    });
+    isUpdating = true;
+    res.json({ message: `Database update for ticker ${tick} started successfully` });
+    await updateDatabaseForTicker(tick);
   } catch (error) {
     logger.error(`Error updating database for ticker:`, error);
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Invalid input', details: error.errors });
-    } else if (error instanceof Error) {
-      res.status(500).json({ error: 'Internal server error', message: error.message });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    isUpdating = false;
   }
 });
