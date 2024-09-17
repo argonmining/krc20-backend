@@ -50,20 +50,33 @@ async function runDatabaseUpdate() {
 
 const UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
 
-// Run the update function every hour if HISTORICAL_UPDATE is false
-setInterval(async () => {
-  if (process.env.HISTORICAL_UPDATE === 'false' && !isUpdating) {
-    await runDatabaseUpdate();
-  }
-}, UPDATE_INTERVAL);
+// Remove this line
+// runDatabaseUpdate();
+
+// Instead, let's schedule the first update
+const scheduleNextUpdate = () => {
+  const now = new Date();
+  const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0, 0, 0);
+  const delay = nextHour.getTime() - now.getTime();
+
+  setTimeout(() => {
+    if (process.env.HISTORICAL_UPDATE === 'false' && !isUpdating && process.env.UPDATING_SINGLE_TICKER === 'false') {
+      runDatabaseUpdate();
+    }
+    scheduleNextUpdate(); // Schedule the next update
+  }, delay);
+
+  logger.info(`Next database update scheduled for ${nextHour.toISOString()}`);
+};
+
+// Start the scheduling
+scheduleNextUpdate();
 
 // Initial log for time until first update
 const initialNextUpdate = new Date(Math.ceil(new Date().getTime() / UPDATE_INTERVAL) * UPDATE_INTERVAL);
 const initialTimeUntilNextUpdate = initialNextUpdate.getTime() - new Date().getTime();
 const initialMinutesUntilNextUpdate = Math.round(initialTimeUntilNextUpdate / 60000);
 logger.info(`Time until first database update: ${initialMinutesUntilNextUpdate} minutes`);
-
-runDatabaseUpdate();
 
 app.get('/api/mint-Totals', async (req, res) => {
   try {
@@ -285,8 +298,16 @@ app.get('/api/topHolders', async (req, res) => {
 app.post('/api/updateDatabaseForTicker', async (req, res) => {
   try {
     const { tick } = z.object({ tick: tickSchema }).parse(req.body);
-    await updateDatabaseForTicker(tick);
-    res.json({ message: `Database update for ticker ${tick} completed successfully` });
+    if (process.env.UPDATING_SINGLE_TICKER === 'true') {
+      return res.status(400).json({ error: 'Another ticker update is already in progress' });
+    }
+    // Respond immediately
+    res.json({ message: `Database update for ticker ${tick} started successfully` });
+
+    // Process the update in the background
+    updateDatabaseForTicker(tick).catch(error => {
+      logger.error(`Error updating database for ticker ${tick}:`, error);
+    });
   } catch (error) {
     logger.error(`Error updating database for ticker:`, error);
     if (error instanceof z.ZodError) {
