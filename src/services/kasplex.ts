@@ -382,80 +382,10 @@ async function updateDatabaseForTicker(tick: string) {
       }
     }
 
-    // Step 3: Fetch transactions and update database
-    let nextTransaction: string | undefined;
-    let fetchedTransactions = 0;
-    let batchCount = 0;
+    // Step 3: Fetch transactions and update database using fetchAndStoreTransactions
+    await fetchAndStoreTransactions(tick);
 
-    const savedState = loadState();
-    if (savedState && savedState.tick === tick) {
-      nextTransaction = savedState.nextTransaction;
-      batchCount = savedState.batchCount;
-      logger.info(`Resuming from batch #${batchCount} for ${tick}`);
-    }
-
-    do {
-      batchCount++;
-      logger.info(`Fetching transactions batch #${batchCount} for ${tick}`);
-      try {
-        const transactions = await fetchTransactions(tick, nextTransaction);
-        if (transactions.length === 0) {
-          logger.warn(`No transactions fetched for token ${tick} in batch #${batchCount}. Ending fetch.`);
-          break;
-        }
-        logger.warn(`Fetched ${transactions.length} transactions for ${tick} in batch #${batchCount}`);
-
-        for (const tx of transactions) {
-          const transactionData: Transaction = {
-            hashRev: tx.hashRev,
-            p: tx.p,
-            op: tx.op,
-            tick: tx.tick,
-            amt: tx.amt || null,
-            from: tx.from,
-            to: tx.to,
-            opScore: tx.opScore,
-            feeRev: tx.feeRev,
-            txAccept: tx.txAccept,
-            opAccept: tx.opAccept,
-            opError: tx.opError,
-            checkpoint: tx.checkpoint,
-            mtsAdd: tx.mtsAdd,
-            mtsMod: tx.mtsMod,
-            max: tx.max || null,
-            lim: tx.lim || null,
-            pre: tx.pre || null,
-            dec: tx.dec || null
-          };
-
-          await prisma.transaction.upsert({
-            where: { hashRev: tx.hashRev },
-            update: transactionData,
-            create: transactionData,
-          });
-
-          fetchedTransactions++;
-        }
-
-        nextTransaction = transactions.length === 50 ? transactions[transactions.length - 1].opScore : undefined;
-        logger.info(`Processed ${fetchedTransactions} new transactions for ${tick}`);
-
-        // Save state after each batch
-        saveState(tick, nextTransaction, batchCount);
-      } catch (error) {
-        logger.warn(`Failed to fetch transactions for token ${tick}: ${(error as Error).message}`);
-        await new Promise(resolve => setTimeout(resolve, 60000)); // Wait for 60 seconds before retrying
-        if ((error as Error).message.includes('500')) {
-          logger.warn(`Retrying fetch transactions for token ${tick} from next: ${nextTransaction}`);
-          continue;
-        } else {
-          logger.error(`Non-retryable error occurred: ${(error as Error).message}`);
-          break;
-        }
-      }
-    } while (nextTransaction);
-
-    logger.warn(`Finished updating token: ${tick}. Total new transactions processed: ${fetchedTransactions}`);
+    logger.warn(`Finished updating token: ${tick}`);
 
     // Call the cleanup function
     await removeDuplicates();
@@ -463,12 +393,9 @@ async function updateDatabaseForTicker(tick: string) {
     logger.error(`Error updating database for ticker ${tick}:`, error);
   } finally {
     isUpdating = false;
-    // Remove state file after completion
-    if (fs.existsSync(stateFilePath)) {
-      fs.unlinkSync(stateFilePath);
-    }
   }
 }
+
 
 async function removeDuplicates() {
   logger.warn('Starting duplicate removal process');
