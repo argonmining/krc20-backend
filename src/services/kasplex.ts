@@ -209,13 +209,8 @@ async function retryApiCall<T>(
 }
 
 async function updateDatabase() {
-  if (process.env.UPDATING_SINGLE_TICKER === 'true') {
-    logger.warn('Single ticker update is in progress. Skipping full database update.');
-    return;
-  }
-
   if (isUpdating) {
-    logger.warn('Database update is already running');
+    logger.warn('Database update is already running or ticker-specific update is in progress.');
     return;
   }
 
@@ -234,7 +229,7 @@ async function updateDatabase() {
       for (const token of tokens) {
         logger.info(`Updating token: ${token.tick}`);
 
-        // Step 2: Fetch token info and update database
+        // Step 2: Fetch token info and update the database
         const tokenInfo = await fetchTokenInfo(token.tick);
         logger.info(`Fetched token info for ${token.tick}: mintTotal = ${tokenInfo.mintTotal}`);
         
@@ -302,12 +297,12 @@ function loadState() {
 }
 
 async function updateDatabaseForTicker(tick: string) {
-  if (process.env.UPDATING_SINGLE_TICKER === 'true') {
-    logger.warn('Another single ticker update is already in progress. Please wait.');
+  if (isUpdating) {
+    logger.warn('Full database update is in progress. Skipping ticker-specific update.');
     return;
   }
 
-  process.env.UPDATING_SINGLE_TICKER = 'true';
+  isUpdating = true;
   try {
     logger.info(`Updating database for ticker: ${tick}`);
 
@@ -467,7 +462,7 @@ async function updateDatabaseForTicker(tick: string) {
   } catch (error) {
     logger.error(`Error updating database for ticker ${tick}:`, error);
   } finally {
-    process.env.UPDATING_SINGLE_TICKER = 'false';
+    isUpdating = false;
     // Remove state file after completion
     if (fs.existsSync(stateFilePath)) {
       fs.unlinkSync(stateFilePath);
