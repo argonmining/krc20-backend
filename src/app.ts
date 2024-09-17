@@ -2,7 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
-import { updateDatabase, updateDatabaseForTicker } from './services/kasplex';
+import { updateDatabase, updateDatabaseForTicker, fetchAndStorePriceData } from './services/kasplex';
 import logger from './utils/logger';
 import { z } from 'zod';
 import cors from 'cors';
@@ -12,6 +12,8 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
+const PRICE_UPDATE_INTERVAL = parseInt(process.env.PRICE_UPDATE_INTERVAL || '15') * 60 * 1000; // 15 minutes in milliseconds
+
 
 app.use(express.json());
 app.use(cors({
@@ -49,9 +51,6 @@ async function runDatabaseUpdate() {
 }
 
 const UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
-
-// Remove this line
-// runDatabaseUpdate();
 
 // Instead, let's schedule the first update
 const scheduleNextUpdate = () => {
@@ -108,6 +107,12 @@ app.get('/api/mint-Totals', async (req, res) => {
         },
       },
     });
+
+    // Schedule price data updates every 15 minutes
+    setInterval(fetchAndStorePriceData, PRICE_UPDATE_INTERVAL);
+
+    // Initial fetch to avoid waiting 15 minutes
+    fetchAndStorePriceData();
 
     const mintTotals = tokens.map(({ tick, _count }) => ({
       tick,
@@ -309,5 +314,44 @@ app.post('/api/updateDatabaseForTicker', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   } finally {
     isUpdating = false;
+  }
+});
+
+app.get('/api/TokenPriceData', async (req, res) => {
+  try {
+    const { tick, start, end } = z.object({
+      tick: z.string().min(1),
+      start: z.string().optional(),
+      end: z.string().optional(),
+    }).parse(req.query);
+
+    const dateFilter: any = {};
+    if (start) {
+      dateFilter.gte = new Date(start);
+    }
+    if (end) {
+      dateFilter.lte = new Date(end);
+    }
+
+    const priceData = await prisma.priceData.findMany({
+      where: {
+        tick,
+        timestamp: Object.keys(dateFilter).length ? dateFilter : undefined,
+      },
+      orderBy: {
+        timestamp: 'asc',
+      }
+    });
+
+    res.json(priceData);
+  } catch (error) {
+    logger.error('Error fetching price data:', error);
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: 'Invalid input', details: error.errors });
+    } else if (error instanceof Error) {
+      res.status(500).json({ error: 'Internal server error', message: error.message });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 });

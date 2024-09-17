@@ -6,6 +6,8 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
+const PRICE_API_URL = 'https://storage.googleapis.com/kspr-api-v1/marketplace/marketplace.json';
+
 // Maximum number of transactions per API call (set according to the API limit)
 const MAX_BATCH_SIZE = 50;
 
@@ -112,6 +114,40 @@ async function fetchTransactions(tick: string, next?: string): Promise<Transacti
     const response = await axios.get(url.toString());
     return response.data.result;
   });
+}
+
+async function fetchAndStorePriceData() {
+  try {
+    const response = await axios.get(PRICE_API_URL);
+    const priceData = response.data;
+    
+    const kasFloorPrice = priceData['KAS'].floor_price;
+    
+    // Filter out the KAS token and iterate over the remaining tokens
+    for (const tick in priceData) {
+      if (tick === 'KAS') continue;
+
+      const tokenData = priceData[tick];
+      const valueKAS = tokenData.floor_price;
+      const valueUSD = valueKAS * kasFloorPrice; // Convert to USD
+      const change24h = tokenData.change_24h;
+
+      // Store the price data in the database
+      await prisma.priceData.create({
+        data: {
+          tick,
+          timestamp: new Date(),
+          valueKAS,
+          valueUSD,
+          change24h
+        }
+      });
+
+      logger.info(`Stored price data for ${tick}: KAS value = ${valueKAS}, USD value = ${valueUSD}`);
+    }
+  } catch (error) {
+    logger.error('Error fetching or storing price data:', error);
+  }
 }
 
 async function fetchTokenHoldings(address: string): Promise<{ tick: string; balance: string }[]> {
@@ -430,4 +466,4 @@ async function removeDuplicates() {
   logger.warn('Duplicate removal process completed');
 }
 
-export { updateDatabase, updateDatabaseForTicker };
+export { updateDatabase, updateDatabaseForTicker, fetchAndStorePriceData };
