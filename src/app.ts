@@ -238,16 +238,21 @@ app.post('/api/updateDatabase', async (req, res) => {
     return res.status(400).json({ error: 'Database update is already running' });
   }
 
-  try {
-    isUpdating = true;
-    await updateDatabase();
-    res.json({ message: 'Database update completed successfully' });
-  } catch (error) {
-    logger.error('Error updating database:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    isUpdating = false;
-  }
+  // Respond immediately to the API call
+  res.json({ message: 'Database update started successfully' });
+
+  // Proceed with the update in the background
+  setImmediate(async () => {
+    try {
+      isUpdating = true;
+      await updateDatabase();
+      logger.info('Database update completed successfully');
+    } catch (error) {
+      logger.error('Error updating database:', error);
+    } finally {
+      isUpdating = false;
+    }
+  });
 });
 
 app.get('/api/token/:tick', async (req, res) => {

@@ -120,9 +120,9 @@ async function fetchAndStorePriceData() {
   try {
     const response = await axios.get(PRICE_API_URL);
     const priceData = response.data;
-    
+
     const kasFloorPrice = priceData['KAS'].floor_price;
-    
+
     // Filter out the KAS token and iterate over the remaining tokens
     for (const tick in priceData) {
       if (tick === 'KAS') continue;
@@ -131,6 +131,17 @@ async function fetchAndStorePriceData() {
       const valueKAS = tokenData.floor_price;
       const valueUSD = valueKAS * kasFloorPrice; // Convert to USD
       const change24h = tokenData.change_24h;
+
+      // Check if the token exists in the database
+      const tokenExists = await prisma.token.findUnique({
+        where: { tick }
+      });
+
+      // Skip inserting price data if the token doesn't exist
+      if (!tokenExists) {
+        logger.warn(`Token ${tick} does not exist in the Token table. Skipping price data insertion.`);
+        continue;
+      }
 
       // Store the price data in the database
       await prisma.priceData.create({
@@ -149,6 +160,7 @@ async function fetchAndStorePriceData() {
     logger.error('Error fetching or storing price data:', error);
   }
 }
+
 
 async function fetchTokenHoldings(address: string): Promise<{ tick: string; balance: string }[]> {
   return retryApiCall(async () => {
