@@ -6,6 +6,20 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
+// Maximum number of transactions per API call (set according to the API limit)
+const MAX_BATCH_SIZE = 50;
+
+// Maximum number of retries for API calls
+const MAX_RETRIES = 5;
+
+// Delay between retries (in milliseconds)
+const RETRY_DELAY = 2000;
+
+// Helper function to pause execution
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 interface TokenListItem {
   tick: string;
   max: string;
@@ -249,127 +263,8 @@ async function updateDatabase() {
           create: tokenData,
         });
 
-        // Step 3: Fetch token holdings and update database
-        if (tokenInfo.holder && tokenInfo.holder.length > 0) {
-          for (const holder of tokenInfo.holder) {
-            const tokenHoldings = await fetchTokenHoldings(holder.address);
-            const balances = tokenHoldings.map(holding => ({
-              tokenTick: holding.tick,
-              balance: holding.balance,
-            }));
-
-            // Ensure all tokenTick values exist in the Token table
-            const tokenTicks = balances.map(balance => balance.tokenTick);
-            const existingTokens = await prisma.token.findMany({
-              where: {
-                tick: {
-                  in: tokenTicks,
-                },
-              },
-              select: {
-                tick: true,
-              },
-            });
-
-            const existingTokenTicks = new Set(existingTokens.map(token => token.tick));
-            const validBalances = balances.filter(balance => existingTokenTicks.has(balance.tokenTick));
-
-            if (validBalances.length > 0) {
-              await prisma.holder.upsert({
-                where: { address: holder.address },
-                update: {
-                  balances: {
-                    deleteMany: {},
-                    create: validBalances,
-                  },
-                },
-                create: {
-                  address: holder.address,
-                  balances: {
-                    create: validBalances,
-                  },
-                },
-              });
-            } else {
-              logger.warn(`No valid balances for holder ${holder.address} for token ${token.tick}`);
-            }
-          }
-        }
-
-        // Step 4: Fetch transactions and update database
-        let fetchedTransactions = 0;
-        let batchCount = 0;
-        let nextTransaction: string | undefined;
-
-        do {
-          batchCount++;
-          logger.info(`Fetching transactions batch #${batchCount} for ${token.tick}`);
-          try {
-            const transactions = await fetchTransactions(token.tick, nextTransaction);
-            if (transactions.length === 0) {
-              logger.warn(`No transactions fetched for token ${token.tick} in batch #${batchCount}. Skipping to next token.`);
-              break;
-            }
-            logger.info(`Fetched ${transactions.length} transactions for ${token.tick} in batch #${batchCount}`);
-
-            for (const tx of transactions) {
-              const existingTransaction = await prisma.transaction.findUnique({
-                where: { hashRev: tx.hashRev },
-              });
-
-              if (existingTransaction) {
-                const historicalUpdate = process.env.HISTORICAL_UPDATE;
-                logger.info(`Found existing transaction ${tx.hashRev} for ${token.tick}. HISTORICAL_UPDATE is set to ${historicalUpdate}. ${historicalUpdate === "true" ? 'Continuing fetch for this token.' : 'Stopping fetch for this token.'}`);
-                if (historicalUpdate !== "true") break;
-              }
-
-              const transactionData: Transaction = {
-                hashRev: tx.hashRev,
-                p: tx.p,
-                op: tx.op,
-                tick: tx.tick,
-                amt: tx.amt || null,
-                from: tx.from,
-                to: tx.to,
-                opScore: tx.opScore,
-                feeRev: tx.feeRev,
-                txAccept: tx.txAccept,
-                opAccept: tx.opAccept,
-                opError: tx.opError,
-                checkpoint: tx.checkpoint,
-                mtsAdd: tx.mtsAdd,
-                mtsMod: tx.mtsMod,
-                max: tx.max || null,
-                lim: tx.lim || null,
-                pre: tx.pre || null,
-                dec: tx.dec || null
-              };
-
-              await prisma.transaction.upsert({
-                where: { hashRev: tx.hashRev },
-                update: transactionData,
-                create: transactionData,
-              });
-
-              fetchedTransactions++;
-            }
-
-            nextTransaction = transactions.length === 50 ? transactions[transactions.length - 1].opScore : undefined;
-            logger.info(`Processed ${fetchedTransactions} new transactions for ${token.tick}`);
-          } catch (error) {
-            logger.warn(`Failed to fetch transactions for token ${token.tick}: ${(error as Error).message}`);
-            await new Promise(resolve => setTimeout(resolve, 20000)); // Wait for 20 seconds before retrying
-            if ((error as Error).message.includes('500')) {
-              logger.warn(`Retrying fetch transactions for token ${token.tick} from next: ${nextTransaction}`);
-              continue;
-            } else {
-              break;
-            }
-          }
-        } while (nextTransaction);
-
-        logger.warn(`Finished updating token: ${token.tick}. Total new transactions processed: ${fetchedTransactions}`);
-        totalNewTransactions += fetchedTransactions;
+        // Step 4: Fetch transactions and update database using the helper function
+        await fetchAndStoreTransactions(token.tick);
       }
 
       next = nextPage;
