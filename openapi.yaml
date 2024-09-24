@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: KRC20 Backend API
   version: 1.0.0
-  description: API for managing KRC20 tokens and transactions
+  description: API for KRC20 tokens and transactions
 
 servers:
   - url: https://katapi.nachowyborski.xyz
@@ -29,7 +29,7 @@ paths:
         '200':
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
                 type: array
                 items:
@@ -38,6 +38,35 @@ paths:
                     tick:
                       type: string
                     mintTotal:
+                      type: integer
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /api/mintsovertime:
+    get:
+      summary: Get mint counts over time for a specific token
+      parameters:
+        - in: query
+          name: tick
+          schema:
+            type: string
+          description: Token tick
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                      format: date
+                    count:
                       type: integer
         '400':
           description: Invalid input
@@ -72,7 +101,7 @@ paths:
         '200':
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
                 type: array
                 items:
@@ -89,7 +118,7 @@ paths:
         '200':
           description: Successful response
           content:
-            application/json:    
+            application/json:
               schema:
                 type: array
                 items:
@@ -153,6 +182,109 @@ paths:
                 $ref: '#/components/schemas/Token'
         '404':
           description: Token not found
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /api/topHolders:
+    get:
+      summary: Get top holders
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                    balances:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          tick:
+                            type: string
+                          balance:
+                            type: string
+        '500':
+          description: Internal server error
+
+  /api/updateDatabaseForTicker:
+    post:
+      summary: Manually trigger database update for a specific ticker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tick:
+                  type: string
+      responses:
+        '200':
+          description: Database update for ticker completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database update for ticker completed successfully
+        '400':
+          description: Another update is already running
+        '500':
+          description: Internal server error
+
+  /api/TokenPriceData:
+    get:
+      summary: Get price data for a specific token
+      parameters:
+        - in: query
+          name: tick
+          required: true
+          schema:
+            type: string
+          description: Token tick
+        - in: query
+          name: start
+          schema:
+            type: string
+            format: date-time
+          description: Start date for filtering price data
+        - in: query
+          name: end
+          schema:
+            type: string
+            format: date-time
+          description: End date for filtering price data
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    tick:
+                      type: string
+                    timestamp:
+                      type: string
+                      format: date-time
+                    valueKAS:
+                      type: number
+                    valueUSD:
+                      type: number
+                    change24h:
+                      type: number
         '400':
           description: Invalid input
         '500':
