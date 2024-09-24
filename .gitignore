@@ -4,6 +4,5 @@ dist
 .DS_Store
 *.log
 prisma/migrations
-openapi.yaml
 ecosystem.config.js
 package-lock.json

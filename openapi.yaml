@@ -1,0 +1,245 @@
+openapi: 3.0.0
+info:
+  title: KRC20 Backend API
+  version: 1.0.0
+  description: API for managing KRC20 tokens and transactions
+
+servers:
+  - url: https://katapi.nachowyborski.xyz
+    description: Local development server
+
+paths:
+  /api/mint-Totals:
+    get:
+      summary: Get mint totals for all tokens
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+          description: Start date for filtering mint totals
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+          description: End date for filtering mint totals
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    tick:
+                      type: string
+                    mintTotal:
+                      type: integer
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /api/transactions:
+    get:
+      summary: Get transactions for a specific token
+      parameters:
+        - in: query
+          name: tick
+          required: true
+          schema:
+            type: string
+          description: Token tick
+        - in: query
+          name: startDate
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Start date for filtering transactions
+        - in: query
+          name: endDate
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: End date for filtering transactions
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /api/holders:
+    get:
+      summary: Get holder totals for all tokens
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    tick:
+                      type: string
+                    holderTotal:
+                      type: integer
+        '500':
+          description: Internal server error
+
+  /health:
+    get:
+      summary: Check API health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+
+  /api/updateDatabase:
+    post:
+      summary: Manually trigger database update
+      responses:
+        '200':
+          description: Database update completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database update completed successfully
+        '500':
+          description: Internal server error
+
+  /api/token/{tick}:
+    get:
+      summary: Get information for a specific token
+      parameters:
+        - in: path
+          name: tick
+          required: true
+          schema:
+            type: string
+          description: Token tick
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '404':
+          description: Token not found
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    Transaction:
+      type: object
+      properties:
+        hashRev:
+          type: string
+        p:
+          type: string
+        op:
+          type: string
+        tick:
+          type: string
+        amt:
+          type: string
+          nullable: true
+        from:
+          type: string
+        to:
+          type: string
+        opScore:
+          type: string
+        feeRev:
+          type: string
+        txAccept:
+          type: string
+        opAccept:
+          type: string
+        opError:
+          type: string
+        checkpoint:
+          type: string
+        mtsAdd:
+          type: string
+        mtsMod:
+          type: string
+        max:
+          type: string
+          nullable: true
+        lim:
+          type: string
+          nullable: true
+        pre:
+          type: string
+          nullable: true
+        dec:
+          type: string
+          nullable: true
+
+    Token:
+      type: object
+      properties:
+        tick:
+          type: string
+        max:
+          type: string
+        lim:
+          type: string
+        pre:
+          type: string
+        to:
+          type: string
+        dec:
+          type: string
+        minted:
+          type: string
+        opScoreAdd:
+          type: string
+        opScoreMod:
+          type: string
+        state:
+          type: string
+        hashRev:
+          type: string
+        mtsAdd:
+          type: string
+        holderTotal:
+          type: integer
+        transferTotal:
+          type: integer
+        mintTotal:
+          type: integer
+        lastUpdated:
+          type: string
+          format: date-time
