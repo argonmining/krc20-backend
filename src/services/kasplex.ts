@@ -287,8 +287,10 @@ async function updateDatabase() {
     logger.warn('Starting database update');
     let totalNewTransactions = 0;
     let next: string | undefined;
+
+    // Fetch the last update time or set a default value if it doesn't exist
     const lastUpdate = await prisma.lastUpdate.findUnique({ where: { id: 1 } });
-    const lastUpdateTime = lastUpdate ? new Date(lastUpdate.timestamp).getTime() : 0;
+    const lastUpdateTime = lastUpdate ? new Date(lastUpdate.timestamp).getTime() : new Date('2024-06-01T00:00:00Z').getTime();
 
     do {
       const { tokens, next: nextPage } = await fetchTokenList(next);
@@ -344,6 +346,8 @@ async function updateDatabase() {
     // Call the cleanup function
     await removeDuplicates();
 
+  } catch (error) {
+    logger.error('Error updating database:', error);
   } finally {
     isUpdating = false;
   }
