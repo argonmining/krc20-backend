@@ -104,61 +104,6 @@ logger.info(
     `Time until first database update: ${initialMinutesUntilNextUpdate} minutes`,
 )
 
-// app.get('/api/mint-Totals', async (req, res) => {
-//   try {
-//     const { startDate, endDate } = z.object({
-//       startDate: dateSchema.optional(),
-//       endDate: dateSchema.optional(),
-//     }).parse(req.query);
-
-//     const dateFilter: any = {};
-//     if (startDate) {
-//       dateFilter.gte = new Date(startDate).getTime().toString();
-//     }
-//     if (endDate) {
-//       dateFilter.lte = new Date(endDate).getTime().toString();
-//     }
-
-//     const tokens = await prisma.token.findMany({
-//       select: {
-//         tick: true,
-//         _count: {
-//           select: {
-//             transactions: {
-//               where: {
-//                 op: 'mint',
-//                 ...(Object.keys(dateFilter).length > 0 && { mtsAdd: dateFilter }),
-//               },
-//             },
-//           },
-//         },
-//       },
-//     });
-
-//     // Schedule price data updates every 15 minutes
-//     setInterval(fetchAndStorePriceData, PRICE_UPDATE_INTERVAL);
-
-//     // Initial fetch to avoid waiting 15 minutes
-//     fetchAndStorePriceData();
-
-//     const mintTotals = tokens.map(({ tick, _count }) => ({
-//       tick,
-//       mintTotal: _count.transactions,
-//     }));
-
-//     res.json(mintTotals);
-//   } catch (error) {
-//     logger.error('Error fetching mint totals:', error);
-//     if (error instanceof z.ZodError) {
-//       res.status(400).json({ error: 'Invalid input', details: error.errors });
-//     } else if (error instanceof Error) {
-//       res.status(500).json({ error: 'Internal server error', message: error.message });
-//     } else {
-//       res.status(500).json({ error: 'Internal server error' });
-//     }
-//   }
-// });
-
 app.get(
     '/api/mint-Totals',
     catchAsync(async (req: Request, res: Response) => {
@@ -210,8 +155,9 @@ app.get(
     }, 'Error fetching mint totals:'),
 )
 
-app.get('/api/mintsovertime', async (req, res) => {
-    try {
+app.get(
+    '/api/mintsovertime',
+    catchAsync(async (req: Request, res: Response) => {
         const { tick } = z
             .object({
                 tick: tickSchema,
@@ -248,26 +194,12 @@ app.get('/api/mintsovertime', async (req, res) => {
         }))
 
         res.json(result)
-    } catch (error) {
-        logger.error('Error fetching mints over time:', error)
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                error: 'Invalid input',
-                details: error.errors,
-            })
-        } else if (error instanceof Error) {
-            res.status(500).json({
-                error: 'Internal server error',
-                message: error.message,
-            })
-        } else {
-            res.status(500).json({ error: 'Internal server error' })
-        }
-    }
-})
+    }, 'Error fetching mints over time:'),
+)
 
-app.get('/api/transactions', async (req, res) => {
-    try {
+app.get(
+    '/api/transactions',
+    catchAsync(async (req: Request, res: Response) => {
         const { tick, startDate, endDate } = z
             .object({
                 tick: tickSchema,
@@ -287,26 +219,12 @@ app.get('/api/transactions', async (req, res) => {
         })
 
         res.json(transactions)
-    } catch (error) {
-        logger.error('Error fetching transactions:', error)
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                error: 'Invalid input',
-                details: error.errors,
-            })
-        } else if (error instanceof Error) {
-            res.status(500).json({
-                error: 'Internal server error',
-                message: error.message,
-            })
-        } else {
-            res.status(500).json({ error: 'Internal server error' })
-        }
-    }
-})
+    }, 'Error fetching transactions:'),
+)
 
-app.get('/api/holders', async (req, res) => {
-    try {
+app.get(
+    '/api/holders',
+    catchAsync(async (req: Request, res: Response) => {
         const holders = await prisma.token.findMany({
             select: {
                 tick: true,
@@ -314,18 +232,8 @@ app.get('/api/holders', async (req, res) => {
             },
         })
         res.json(holders)
-    } catch (error) {
-        logger.error('Error fetching holders:', error)
-        if (error instanceof Error) {
-            res.status(500).json({
-                error: 'Internal server error',
-                message: error.message,
-            })
-        } else {
-            res.status(500).json({ error: 'Internal server error' })
-        }
-    }
-})
+    }, 'Error fetching holders:'),
+)
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK' })
@@ -335,32 +243,36 @@ app.listen(port, async () => {
     console.log(`Server is running on port ${port}`)
 })
 
-app.post('/api/updateDatabase', async (req, res) => {
-    if (isUpdating) {
-        return res
-            .status(400)
-            .json({ error: 'Database update is already running' })
-    }
-
-    // Respond immediately to the API call
-    res.json({ message: 'Database update started successfully' })
-
-    // Proceed with the update in the background
-    setImmediate(async () => {
-        try {
-            isUpdating = true
-            await updateDatabase()
-            logger.info('Database update completed successfully')
-        } catch (error) {
-            logger.error('Error updating database:', error)
-        } finally {
-            isUpdating = false
+app.post(
+    '/api/updateDatabase',
+    catchAsync(async (req: Request, res: Response) => {
+        if (isUpdating) {
+            return res
+                .status(400)
+                .json({ error: 'Database update is already running' })
         }
-    })
-})
 
-app.get('/api/token/:tick', async (req, res) => {
-    try {
+        // Respond immediately to the API call
+        res.json({ message: 'Database update started successfully' })
+
+        // Proceed with the update in the background
+        setImmediate(async () => {
+            try {
+                isUpdating = true
+                await updateDatabase()
+                logger.info('Database update completed successfully')
+            } catch (error) {
+                logger.error('Error updating database:', error)
+            } finally {
+                isUpdating = false
+            }
+        })
+    }, 'Error occurred while updating the database'),
+)
+
+app.get(
+    '/api/token/:tick',
+    catchAsync(async (req: Request, res: Response) => {
         const { tick } = z.object({ tick: tickSchema }).parse(req.params)
         const token = await prisma.token.findUnique({ where: { tick } })
         if (!token) {
@@ -368,26 +280,12 @@ app.get('/api/token/:tick', async (req, res) => {
         } else {
             res.json(token)
         }
-    } catch (error) {
-        logger.error('Error fetching token:', error)
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                error: 'Invalid input',
-                details: error.errors,
-            })
-        } else if (error instanceof Error) {
-            res.status(500).json({
-                error: 'Internal server error',
-                message: error.message,
-            })
-        } else {
-            res.status(500).json({ error: 'Internal server error' })
-        }
-    }
-})
+    }, 'Error fetching token:'),
+)
 
-app.get('/api/topHolders', async (req, res) => {
-    try {
+app.get(
+    '/api/topHolders',
+    catchAsync(async (req: Request, res: Response) => {
         const holders = await prisma.holder.findMany({
             include: {
                 balances: {
@@ -408,15 +306,14 @@ app.get('/api/topHolders', async (req, res) => {
         }))
 
         res.json(formattedHolders)
-    } catch (error) {
-        logger.error('Error fetching top holders:', error)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-})
+    }, 'Error fetching top holders:'),
+)
 
-app.post('/api/updateDatabaseForTicker', async (req, res) => {
-    try {
+app.post(
+    '/api/updateDatabaseForTicker',
+    catchAsync(async (req: Request, res: Response) => {
         const { tick } = z.object({ tick: tickSchema }).parse(req.body)
+
         if (isUpdating) {
             return res
                 .status(400)
@@ -427,17 +324,18 @@ app.post('/api/updateDatabaseForTicker', async (req, res) => {
         res.json({
             message: `Database update for ticker ${tick} started successfully`,
         })
-        await updateDatabaseForTicker(tick)
-    } catch (error) {
-        logger.error(`Error updating database for ticker:`, error)
-        res.status(500).json({ error: 'Internal server error' })
-    } finally {
-        isUpdating = false
-    }
-})
 
-app.get('/api/TokenPriceData', async (req, res) => {
-    try {
+        await updateDatabaseForTicker(tick)
+        logger.info(`Database update for ticker ${tick} completed successfully`)
+    }, 'Error updating database for ticker'),
+    () => {
+        isUpdating = false
+    },
+)
+
+app.get(
+    '/api/TokenPriceData',
+    catchAsync(async (req: Request, res: Response) => {
         const { tick, start, end } = z
             .object({
                 tick: z.string().min(1),
@@ -467,20 +365,5 @@ app.get('/api/TokenPriceData', async (req, res) => {
         })
 
         res.json(priceData)
-    } catch (error) {
-        logger.error('Error fetching price data:', error)
-        if (error instanceof z.ZodError) {
-            res.status(400).json({
-                error: 'Invalid input',
-                details: error.errors,
-            })
-        } else if (error instanceof Error) {
-            res.status(500).json({
-                error: 'Internal server error',
-                message: error.message,
-            })
-        } else {
-            res.status(500).json({ error: 'Internal server error' })
-        }
-    }
-})
+    }, 'Error fetching price data:'),
+)
