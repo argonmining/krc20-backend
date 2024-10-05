@@ -292,6 +292,13 @@ async function updateDatabase() {
     const lastUpdate = await prisma.lastUpdate.findUnique({ where: { id: 1 } });
     const lastUpdateTime = lastUpdate ? new Date(lastUpdate.timestamp).getTime() : new Date('2024-06-01T00:00:00Z').getTime();
 
+    // Update the lastUpdate entry in the database at the start
+    await prisma.lastUpdate.upsert({
+      where: { id: 1 },
+      update: { timestamp: new Date() },
+      create: { id: 1, timestamp: new Date() },
+    });
+
     do {
       const { tokens, next: nextPage } = await fetchTokenList(next);
       logger.info(`Fetched ${tokens.length} tokens from Kasplex API`);
@@ -334,12 +341,6 @@ async function updateDatabase() {
 
       next = nextPage;
     } while (next);
-
-    await prisma.lastUpdate.upsert({
-      where: { id: 1 },
-      update: { timestamp: new Date() },
-      create: { id: 1, timestamp: new Date() },
-    });
 
     logger.warn(`Database update completed. Total new transactions across all tokens: ${totalNewTransactions}`);
 
