@@ -21,14 +21,9 @@ const port = process.env.PORT || 3000
 const PRICE_UPDATE_INTERVAL =
     parseInt(process.env.PRICE_UPDATE_INTERVAL || '15') * 60 * 1000 // 15 minutes in milliseconds
 
+// Use CORS middleware with options
+
 app.use(express.json())
-app.use(
-    cors({
-        origin: '*', // This allows all origins
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow all methods
-        allowedHeaders: ['Content-Type', 'Authorization'],
-    }),
-)
 
 const dateSchema = z.string().datetime()
 const tickSchema = z.string().min(1)
