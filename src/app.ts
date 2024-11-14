@@ -356,3 +356,44 @@ app.get('/api/TokenPriceData', async (req, res) => {
     }
   }
 });
+
+app.get('/api/tokens', async (req, res) => {
+  try {
+    const tokens = await prisma.token.findMany({
+      select: {
+        tick: true,
+        max: true,
+        lim: true,
+        pre: true,
+        to: true,
+        dec: true,
+        minted: true,
+        opScoreAdd: true,
+        opScoreMod: true,
+        state: true,
+        hashRev: true,
+        mtsAdd: true,
+        holderTotal: true,
+        transferTotal: true,
+        mintTotal: true,
+        lastUpdated: true,
+        PriceData: {
+          select: {
+            valueKAS: true,
+            valueUSD: true,
+            change24h: true,
+          },
+          orderBy: {
+            timestamp: 'desc',
+          },
+          take: 1, // Get the latest price data
+        },
+      },
+    });
+
+    res.json(tokens);
+  } catch (error) {
+    logger.error('Error fetching tokens:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
