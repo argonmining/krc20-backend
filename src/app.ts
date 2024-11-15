@@ -363,8 +363,9 @@ app.get(
     }, 'Error fetching price data:'),
 )
 
-app.get('/api/tokens', async (req, res) => {
-    try {
+app.get(
+    '/api/tokens',
+    catchAsync(async (req: Request, res: Response) => {
         const tokens = await prisma.token.findMany({
             select: {
                 tick: true,
@@ -398,8 +399,5 @@ app.get('/api/tokens', async (req, res) => {
         })
 
         res.json(tokens)
-    } catch (error) {
-        logger.error('Error fetching tokens:', error)
-        res.status(500).json({ error: 'Internal server error' })
-    }
-})
+    }, 'Error fetching tokens: '),
+)
