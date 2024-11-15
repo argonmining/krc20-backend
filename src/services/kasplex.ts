@@ -290,7 +290,7 @@ async function updateDatabase() {
 
     // Fetch the last update time or set a default value if it doesn't exist
     const lastUpdate = await prisma.lastUpdate.findUnique({ where: { id: 1 } });
-    const lastUpdateTime = lastUpdate ? new Date(lastUpdate.timestamp).getTime() : new Date('2024-06-01T00:00:00Z').getTime();
+    const lastUpdateTime = lastUpdate ? new Date(lastUpdate.timestamp).getTime() : new Date('2024-09-20T00:00:00Z').getTime();
 
     // Update the lastUpdate entry in the database at the start
     await prisma.lastUpdate.upsert({
