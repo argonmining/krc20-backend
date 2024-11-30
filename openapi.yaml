@@ -5,7 +5,7 @@ info:
   description: API for KRC20 tokens and transactions
 
 servers:
-  - url: https://katapi.nachowyborski.xyz
+  - url: https://katapi....
     description: Local development server
 
 paths:
@@ -290,6 +290,37 @@ paths:
         '500':
           description: Internal server error
 
+  /api/upload-logo:
+    post:
+      summary: Upload a new logo for a token
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                logo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Logo uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: File uploaded successfully
+                  filename:
+                    type: string
+        '400':
+          description: No file uploaded
+        '500':
+          description: Internal server error
+
 components:
   schemas:
     Transaction:
@@ -375,3 +406,6 @@ components:
         lastUpdated:
           type: string
           format: date-time
+        logo:
+          type: string
+          nullable: true

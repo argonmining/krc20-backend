@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
@@ -6,6 +6,8 @@ import { updateDatabase, updateDatabaseForTicker, fetchAndStorePriceData } from 
 import logger from './utils/logger';
 import { z } from 'zod';
 import cors from 'cors';
+import multer, { FileFilterCallback } from 'multer';
+import path from 'path';
 
 dotenv.config();
 
@@ -254,7 +256,28 @@ app.post('/api/updateDatabase', async (req, res) => {
 app.get('/api/token/:tick', async (req, res) => {
   try {
     const { tick } = z.object({ tick: tickSchema }).parse(req.params);
-    const token = await prisma.token.findUnique({ where: { tick } });
+    const token = await prisma.token.findUnique({
+      where: { tick },
+      select: {
+        tick: true,
+        max: true,
+        lim: true,
+        pre: true,
+        to: true,
+        dec: true,
+        minted: true,
+        opScoreAdd: true,
+        opScoreMod: true,
+        state: true,
+        hashRev: true,
+        mtsAdd: true,
+        holderTotal: true,
+        transferTotal: true,
+        mintTotal: true,
+        lastUpdated: true,
+        logo: true,
+      },
+    });
     if (!token) {
       res.status(404).json({ error: 'Token not found' });
     } else {
@@ -377,6 +400,7 @@ app.get('/api/tokens', async (req, res) => {
         transferTotal: true,
         mintTotal: true,
         lastUpdated: true,
+        logo: true,
         PriceData: {
           select: {
             valueKAS: true,
@@ -397,3 +421,33 @@ app.get('/api/tokens', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Set up multer for file uploads
+const uploadDir = '/var/www/krc20-logos'; // Ensure this path matches your Nginx alias
+const storage = multer.diskStorage({
+  destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+    cb(null, uploadDir);
+  },
+  filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage });
+
+// Endpoint to upload a new logo
+app.post('/api/upload-logo', upload.single('logo'), (req: MulterRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    res.status(200).json({ message: 'File uploaded successfully', filename: req.file.filename });
+  } catch (error) {
+    logger.error('Error uploading file:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}

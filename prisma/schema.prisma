@@ -24,6 +24,7 @@ model Token {
   transferTotal Int
   mintTotal     Int
   lastUpdated   DateTime
+  logo          String?
   transactions  Transaction[]
   balances      Balance[]
   PriceData     PriceData[]
