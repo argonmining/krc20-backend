@@ -65,6 +65,12 @@ This is the backend API for managing KRC20 tokens and transactions. It provides 
 
 Refer to the [OpenAPI Specification](openapi.yaml) for detailed information about the available endpoints and their usage.
 
+### Key Endpoints
+
+- **GET /api/mint-Totals**: Retrieve mint totals for all tokens.
+- **GET /api/transactions**: Get transactions for a specific token.
+- **POST /api/{ticker}/upload-logo**: Upload a new logo for a specific token and update the database.
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.

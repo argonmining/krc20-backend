@@ -290,9 +290,16 @@ paths:
         '500':
           description: Internal server error
 
-  /api/upload-logo:
+  /api/{ticker}/upload-logo:
     post:
-      summary: Upload a new logo for a token
+      summary: Upload a new logo for a specific token
+      parameters:
+        - in: path
+          name: ticker
+          required: true
+          schema:
+            type: string
+          description: Token ticker
       requestBody:
         required: true
         content:
@@ -305,7 +312,7 @@ paths:
                   format: binary
       responses:
         '200':
-          description: Logo uploaded successfully
+          description: Logo uploaded and database updated successfully
           content:
             application/json:
               schema:
@@ -313,7 +320,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: File uploaded successfully
+                    example: File uploaded and database updated successfully
                   filename:
                     type: string
         '400':

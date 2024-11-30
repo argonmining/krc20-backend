@@ -429,21 +429,43 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    cb(null, file.originalname);
+    const ticker = req.params.ticker; // Get the ticker from the URL
+    const extension = path.extname(file.originalname); // Preserve the original file extension
+    cb(null, `${ticker}${extension}`);
   },
 });
 
 const upload = multer({ storage });
 
-// Endpoint to upload a new logo
-app.post('/api/upload-logo', upload.single('logo'), (req: MulterRequest, res: Response) => {
+// Endpoint to upload a new logo and update the database
+app.post('/api/:ticker/upload-logo', upload.single('logo'), async (req: Request, res: Response) => {
   try {
+    const ticker = req.params.ticker.toUpperCase(); // Convert ticker to uppercase
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    res.status(200).json({ message: 'File uploaded successfully', filename: req.file.filename });
+
+    // Check if the token exists
+    const tokenExists = await prisma.token.findUnique({
+      where: { tick: ticker },
+    });
+
+    if (!tokenExists) {
+      return res.status(404).json({ error: `Token with ticker ${ticker} not found` });
+    }
+
+    // Construct the logo URL
+    const logoUrl = `https://katapi.nachowyborski.xyz/logos/${req.file.filename}`;
+
+    // Update the database with the new logo URL
+    await prisma.token.update({
+      where: { tick: ticker },
+      data: { logo: logoUrl },
+    });
+
+    res.status(200).json({ message: 'File uploaded and database updated successfully', filename: req.file.filename });
   } catch (error) {
-    logger.error('Error uploading file:', error);
+    logger.error('Error uploading file or updating database:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
