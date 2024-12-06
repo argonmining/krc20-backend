@@ -6,16 +6,11 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
-const PRICE_API_URL = 'https://storage.googleapis.com/kspr-api-v1/marketplace/marketplace.json';
-
-// Maximum number of transactions per API call (set according to the API limit)
-const MAX_BATCH_SIZE = 50;
-
-// Maximum number of retries for API calls
-const MAX_RETRIES = 5;
-
-// Delay between retries (in milliseconds)
-const RETRY_DELAY = 2000;
+// Load environment variables
+const KSPR_PRICE_API_URL = process.env.KSPR_PRICE_API_URL || '';
+const MAX_BATCH_SIZE = parseInt(process.env.MAX_BATCH_SIZE || '50', 10);
+const MAX_RETRIES = parseInt(process.env.MAX_RETRIES || '5', 10);
+const RETRY_DELAY = parseInt(process.env.RETRY_DELAY || '2000', 10);
 
 // Helper function to pause execution
 function sleep(ms: number) {
@@ -118,7 +113,7 @@ async function fetchTransactions(tick: string, next?: string): Promise<Transacti
 
 async function fetchAndStorePriceData() {
   try {
-    const response = await ofetch(PRICE_API_URL);
+    const response = await ofetch(KSPR_PRICE_API_URL);
     const priceData = response;
 
     const kasFloorPrice = priceData['KAS'].floor_price;
@@ -350,21 +345,6 @@ async function updateDatabase() {
   } finally {
     isUpdating = false;
   }
-}
-
-const stateFilePath = path.join(__dirname, 'state.json');
-
-function saveState(tick: string, nextTransaction: string | undefined, batchCount: number) {
-  const state = { tick, nextTransaction, batchCount };
-  fs.writeFileSync(stateFilePath, JSON.stringify(state));
-}
-
-function loadState() {
-  if (fs.existsSync(stateFilePath)) {
-    const state = JSON.parse(fs.readFileSync(stateFilePath, 'utf-8'));
-    return state;
-  }
-  return null;
 }
 
 async function updateDatabaseForTicker(tick: string) {
