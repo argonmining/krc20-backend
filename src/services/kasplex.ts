@@ -1,8 +1,6 @@
 import { ofetch } from 'ofetch';
 import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger';
-import fs from 'fs';
-import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -97,17 +95,6 @@ async function fetchTokenInfo(tick: string): Promise<TokenInfo> {
   return retryApiCall(async () => {
     const response = await ofetch(`${process.env.KASPLEX_API_BASE_URL}/krc20/token/${tick}`);
     return response.result[0];
-  });
-}
-
-async function fetchTransactions(tick: string, next?: string): Promise<Transaction[]> {
-  return retryApiCall(async () => {
-    const url = new URL(`${process.env.KASPLEX_API_BASE_URL}/krc20/oplist`);
-    url.searchParams.append('tick', tick);
-    if (next) url.searchParams.append('next', next); // Pagination
-
-    const response = await ofetch(url.toString());
-    return response.result;
   });
 }
 
@@ -239,8 +226,6 @@ async function fetchAndStoreTransactions(tick: string) {
       }
     }
 
-    // Log progress
-    logger.info(`Fetched and stored ${transactions.length} transactions for ${tick}`);
     next = transactions.length === MAX_BATCH_SIZE ? transactions[transactions.length - 1].opScore : undefined;
 
   } while (next); // Continue if there's a 'next' page of transactions
@@ -280,6 +265,7 @@ async function updateDatabase() {
     logger.warn('Starting database update');
     let totalNewTransactions = 0;
     let next: string | undefined;
+    const currentHolders = new Set<string>(); // Track current holders
 
     // Fetch the last update time or set a default value if it doesn't exist
     const lastUpdate = await prisma.lastUpdate.findUnique({ where: { id: 1 } });
@@ -296,50 +282,106 @@ async function updateDatabase() {
       const { tokens, next: nextPage } = await fetchTokenList(next);
       logger.info(`Fetched ${tokens.length} tokens from Kasplex API`);
 
-      for (const token of tokens) {
-        logger.info(`Updating token: ${token.tick}`);
+      // Process tokens concurrently if possible
+      await Promise.all(tokens.map(async (token) => {
+        try {
+          // Fetch token info and update the database
+          const tokenInfo = await fetchTokenInfo(token.tick);
+          
+          const tokenData = {
+            tick: tokenInfo.tick,
+            max: tokenInfo.max,
+            lim: tokenInfo.lim,
+            pre: tokenInfo.pre,
+            to: tokenInfo.to,
+            dec: tokenInfo.dec,
+            minted: tokenInfo.minted,
+            opScoreAdd: tokenInfo.opScoreAdd,
+            opScoreMod: tokenInfo.opScoreMod,
+            state: tokenInfo.state,
+            hashRev: tokenInfo.hashRev,
+            mtsAdd: tokenInfo.mtsAdd,
+            holderTotal: parseInt(String(tokenInfo.holderTotal), 10) || 0,
+            transferTotal: parseInt(String(tokenInfo.transferTotal), 10) || 0,
+            mintTotal: parseInt(String(tokenInfo.mintTotal), 10) || 0,
+            lastUpdated: new Date()
+          };
 
-        // Step 2: Fetch token info and update the database
-        const tokenInfo = await fetchTokenInfo(token.tick);
-        logger.info(`Fetched token info for ${token.tick}: mintTotal = ${tokenInfo.mintTotal}`);
-        
-        const tokenData = {
-          tick: tokenInfo.tick,
-          max: tokenInfo.max,
-          lim: tokenInfo.lim,
-          pre: tokenInfo.pre,
-          to: tokenInfo.to,
-          dec: tokenInfo.dec,
-          minted: tokenInfo.minted,
-          opScoreAdd: tokenInfo.opScoreAdd,
-          opScoreMod: tokenInfo.opScoreMod,
-          state: tokenInfo.state,
-          hashRev: tokenInfo.hashRev,
-          mtsAdd: tokenInfo.mtsAdd,
-          holderTotal: parseInt(String(tokenInfo.holderTotal), 10) || 0,
-          transferTotal: parseInt(String(tokenInfo.transferTotal), 10) || 0,
-          mintTotal: parseInt(String(tokenInfo.mintTotal), 10) || 0,
-          lastUpdated: new Date()
-        };
+          await prisma.token.upsert({
+            where: { tick: token.tick },
+            update: tokenData,
+            create: tokenData,
+          });
 
-        await prisma.token.upsert({
-          where: { tick: token.tick },
-          update: tokenData,
-          create: tokenData,
-        });
+          // Fetch transactions and update database using the helper function
+          await fetchAndStoreTransactions(token.tick);
 
-        // Step 4: Fetch transactions and update database using the helper function
-        await fetchAndStoreTransactions(token.tick);
-      }
+          // Update Holder and Balance tables
+          if (tokenInfo.holder && tokenInfo.holder.length > 0) {
+            await Promise.all(tokenInfo.holder.map(async (holder) => {
+              currentHolders.add(holder.address); // Track current holder
+              const tokenHoldings = await fetchTokenHoldings(holder.address);
+              const balances = tokenHoldings.map(holding => ({
+                tokenTick: holding.tick,
+                balance: holding.balance,
+              }));
+
+              // Ensure all tokenTick values exist in the Token table
+              const tokenTicks = balances.map(balance => balance.tokenTick);
+              const existingTokens = await prisma.token.findMany({
+                where: {
+                  tick: {
+                    in: tokenTicks,
+                  },
+                },
+                select: {
+                  tick: true,
+                },
+              });
+
+              const existingTokenTicks = new Set(existingTokens.map(token => token.tick));
+              const validBalances = balances.filter(balance => existingTokenTicks.has(balance.tokenTick));
+
+              if (validBalances.length > 0) {
+                await prisma.holder.upsert({
+                  where: { address: holder.address },
+                  update: {
+                    balances: {
+                      deleteMany: {},
+                      create: validBalances,
+                    },
+                  },
+                  create: {
+                    address: holder.address,
+                    balances: {
+                      create: validBalances,
+                    },
+                  },
+                });
+              }
+            }));
+          }
+        } catch (error) {
+          logger.error(`Error processing token ${token.tick}:`, error);
+        }
+      }));
 
       next = nextPage;
     } while (next);
 
-    logger.warn(`Database update completed. Total new transactions across all tokens: ${totalNewTransactions}`);
+    // Remove holders not in the current list
+    await prisma.holder.deleteMany({
+      where: {
+        address: {
+          notIn: Array.from(currentHolders),
+        },
+      },
+    });
 
-    // Call the cleanup function
+    // Call the cleanup function to remove duplicates
     await removeDuplicates();
 
+    logger.warn(`Database update completed. Total new transactions across all tokens: ${totalNewTransactions}`);
   } catch (error) {
     logger.error('Error updating database:', error);
   } finally {
