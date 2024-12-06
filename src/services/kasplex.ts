@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { ofetch } from 'ofetch';
 import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger';
 import fs from 'fs';
@@ -90,18 +90,18 @@ async function fetchTokenList(next?: string): Promise<{ tokens: TokenListItem[],
     const url = new URL(`${process.env.KASPLEX_API_BASE_URL}/krc20/tokenlist`);
     if (next) url.searchParams.append('next', next);
     
-    const response = await axios.get(url.toString());
+    const response = await ofetch(url.toString());
     return {
-      tokens: response.data.result,
-      next: response.data.next
+      tokens: response.result,
+      next: response.next
     };
   });
 }
 
 async function fetchTokenInfo(tick: string): Promise<TokenInfo> {
   return retryApiCall(async () => {
-    const response = await axios.get(`${process.env.KASPLEX_API_BASE_URL}/krc20/token/${tick}`);
-    return response.data.result[0];
+    const response = await ofetch(`${process.env.KASPLEX_API_BASE_URL}/krc20/token/${tick}`);
+    return response.result[0];
   });
 }
 
@@ -111,15 +111,15 @@ async function fetchTransactions(tick: string, next?: string): Promise<Transacti
     url.searchParams.append('tick', tick);
     if (next) url.searchParams.append('next', next); // Pagination
 
-    const response = await axios.get(url.toString());
-    return response.data.result;
+    const response = await ofetch(url.toString());
+    return response.result;
   });
 }
 
 async function fetchAndStorePriceData() {
   try {
-    const response = await axios.get(PRICE_API_URL);
-    const priceData = response.data;
+    const response = await ofetch(PRICE_API_URL);
+    const priceData = response;
 
     const kasFloorPrice = priceData['KAS'].floor_price;
 
@@ -180,12 +180,10 @@ async function fetchAndStorePriceData() {
   }
 }
 
-
-
 async function fetchTokenHoldings(address: string): Promise<{ tick: string; balance: string }[]> {
   return retryApiCall(async () => {
-    const response = await axios.get(`${process.env.KASPLEX_API_BASE_URL}/krc20/address/${address}/tokenlist`);
-    return response.data.result.map((item: { tick: string; balance: string }) => ({
+    const response = await ofetch(`${process.env.KASPLEX_API_BASE_URL}/krc20/address/${address}/tokenlist`);
+    return response.result.map((item: { tick: string; balance: string }) => ({
       tick: item.tick,
       balance: item.balance,
     }));
@@ -203,8 +201,8 @@ async function fetchAndStoreTransactions(tick: string) {
       url.searchParams.append('tick', tick);
       if (next) url.searchParams.append('next', next); // Pagination
 
-      const response = await axios.get(url.toString());
-      return response.data.result;
+      const response = await ofetch(url.toString());
+      return response.result;
     });
 
     if (transactions.length === 0) {
@@ -468,7 +466,6 @@ async function updateDatabaseForTicker(tick: string) {
     isUpdating = false;
   }
 }
-
 
 async function removeDuplicates() {
   logger.warn('Starting duplicate removal process');
