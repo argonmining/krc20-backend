@@ -460,7 +460,7 @@ app.post('/api/:ticker/upload-logo', upload.single('logo'), async (req: Request,
     // Update the database with the new logo URL
     await prisma.token.update({
       where: { tick: ticker },
-      data: { logo: logoUrl },
+      data: { logo: logoUrl }
     });
 
     res.status(200).json({ message: 'File uploaded and database updated successfully', filename: req.file.filename });
@@ -473,3 +473,105 @@ app.post('/api/:ticker/upload-logo', upload.single('logo'), async (req: Request,
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
 }
+
+app.get('/api/logos/:ticker', async (req, res) => {
+  try {
+    const { ticker } = req.params;
+    const token = await prisma.token.findUnique({
+      where: { tick: ticker.toUpperCase() },
+      select: { logo: true },
+    });
+
+    if (!token || !token.logo) {
+      return res.status(404).json({ error: 'Logo not found for the specified token' });
+    }
+
+    // Extract the filename from the logo URL
+    const logoFilename = path.basename(token.logo);
+
+    // Construct the full path to the logo file
+    const logoFilePath = path.join(uploadDir, logoFilename);
+
+    // Send the file as a response
+    res.sendFile(logoFilePath);
+  } catch (error) {
+    logger.error('Error fetching token logo:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/tickers', async (req, res) => {
+  try {
+    const ticks = await prisma.token.findMany({
+      select: {
+        tick: true,
+      },
+    });
+
+    const tickArray = ticks.map(token => token.tick);
+    res.json(tickArray);
+  } catch (error) {
+    logger.error('Error fetching ticks:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/tokenlist', async (req, res) => {
+  try {
+    const { limit = 100, cursor, sortBy = 'holderTotal', sortOrder = 'desc' } = req.query;
+
+    // Convert limit to a number
+    const take = parseInt(limit as string, 10);
+
+    // Define allowed fields for sorting
+    const allowedSortFields = [
+      'tick', 'max', 'lim', 'pre', 'minted', 'mtsAdd', 'holderTotal', 'mintTotal'
+    ];
+
+    // Validate sortBy field
+    if (!allowedSortFields.includes(sortBy as string)) {
+      return res.status(400).json({ error: 'Invalid sortBy field' });
+    }
+
+    // Validate sortOrder
+    const order = sortOrder === 'asc' ? 'asc' : 'desc';
+
+    // Fetch tokens with pagination and sorting
+    const tokens = await prisma.token.findMany({
+      take,
+      skip: cursor ? 1 : 0, // Skip the cursor if provided
+      cursor: cursor ? { tick: cursor as string } : undefined,
+      orderBy: {
+        [sortBy as string]: order, // Default sort is by mtsAdd in descending order
+      },
+      select: {
+        tick: true,
+        max: true,
+        lim: true,
+        pre: true,
+        minted: true,
+        mtsAdd: true,
+        holderTotal: true,
+        mintTotal: true,
+        logo: true,
+      },
+    });
+
+    // Modify the logo field to return only the path
+    const modifiedTokens = tokens.map(token => ({
+      ...token,
+      logo: token.logo ? `/logos/${path.basename(token.logo)}` : null,
+    }));
+
+    // Determine the next cursor
+    const nextCursor = tokens.length === take ? tokens[tokens.length - 1].tick : null;
+
+    res.json({
+      tokens: modifiedTokens,
+      nextCursor,
+    });
+  } catch (error) {
+    logger.error('Error fetching token list:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});

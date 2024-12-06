@@ -1,12 +1,12 @@
 openapi: 3.0.0
 info:
-  title: KRC20 Backend API
+  title: KatAPI
   version: 1.0.0
   description: API for KRC20 tokens and transactions
 
 servers:
   - url: https://katapi....
-    description: Local development server
+    description: Production server
 
 paths:
   /api/mint-Totals:
@@ -151,7 +151,7 @@ paths:
       summary: Manually trigger database update
       responses:
         '200':
-          description: Database update completed successfully
+          description: Database update started successfully
           content:
             application/json:
               schema:
@@ -159,7 +159,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Database update completed successfully
+                    example: Database update started successfully
         '500':
           description: Internal server error
 
@@ -228,7 +228,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Database update for ticker completed successfully
+          description: Database update for ticker started successfully
           content:
             application/json:
               schema:
@@ -236,7 +236,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Database update for ticker completed successfully
+                    example: Database update for ticker started successfully
         '400':
           description: Another update is already running
         '500':
@@ -290,9 +290,24 @@ paths:
         '500':
           description: Internal server error
 
-  /api/{ticker}/upload-logo:
-    post:
-      summary: Upload a new logo for a specific token
+  /api/tokens:
+    get:
+      summary: Get all tokens with their latest price data
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Token'
+        '500':
+          description: Internal server error
+
+  /api/logos/{ticker}:
+    get:
+      summary: Get the logo for a specific token
       parameters:
         - in: path
           name: ticker
@@ -300,31 +315,31 @@ paths:
           schema:
             type: string
           description: Token ticker
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                logo:
-                  type: string
-                  format: binary
       responses:
         '200':
-          description: Logo uploaded and database updated successfully
+          description: Logo file
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Logo not found
+        '500':
+          description: Internal server error
+
+  /api/tickers:
+    get:
+      summary: Get all token tickers
+      responses:
+        '200':
+          description: Successful response
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: File uploaded and database updated successfully
-                  filename:
-                    type: string
-        '400':
-          description: No file uploaded
+                type: array
+                items:
+                  type: string
         '500':
           description: Internal server error
 
