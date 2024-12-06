@@ -559,9 +559,10 @@ app.get('/api/tokenlist', async (req, res) => {
       },
     });
 
-    // Modify the logo field to return only the path
+    // Modify the response to set a default value for the dec field
     const modifiedTokens = tokens.map(token => ({
       ...token,
+      dec: 8, // Set the default value for dec
       logo: token.logo ? `/logos/${path.basename(token.logo)}` : null,
     }));
 
