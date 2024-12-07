@@ -256,6 +256,8 @@ app.post('/api/updateDatabase', async (req, res) => {
 app.get('/api/token/:tick', async (req, res) => {
   try {
     const { tick } = z.object({ tick: tickSchema }).parse(req.params);
+    
+    // Fetch the token details
     const token = await prisma.token.findUnique({
       where: { tick },
       select: {
@@ -278,11 +280,37 @@ app.get('/api/token/:tick', async (req, res) => {
         logo: true,
       },
     });
+
     if (!token) {
-      res.status(404).json({ error: 'Token not found' });
-    } else {
-      res.json(token);
+      return res.status(404).json({ error: 'Token not found' });
     }
+
+    // Fetch the balances related to the token
+    const balances = await prisma.balance.findMany({
+      where: { tokenTick: tick },
+      select: {
+        balance: true,
+        holder: {
+          select: {
+            address: true,
+          },
+        },
+      },
+    });
+
+    // Construct the "holder" array
+    const holderArray = balances.map(balance => ({
+      address: balance.holder.address,
+      amount: balance.balance,
+    }));
+
+    // Add the "holder" array to the token response
+    const tokenWithHolders = {
+      ...token,
+      holder: holderArray,
+    };
+
+    res.json(tokenWithHolders);
   } catch (error) {
     logger.error('Error fetching token:', error);
     if (error instanceof z.ZodError) {
