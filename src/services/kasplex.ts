@@ -155,7 +155,6 @@ async function fetchAndStorePriceData() {
         },
       });
 
-      logger.info(`Stored price data for ${tick}: KAS value = ${valueKAS}, USD value = ${valueUSD}`);
     }
   } catch (error) {
     logger.error('Error fetching or storing price data:', error);
