@@ -24,7 +24,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.use('/static', staticRouter)
+// Ensure CORS is applied before static files
+app.use('/static', staticRouter);
 
 app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});
