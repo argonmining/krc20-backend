@@ -11,13 +11,13 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
-const filepath = process.env.FILESYSTEMDIR || '/var/www/';
+const staticRouter = require('./routes/staticRoutes')
 
 // Use CORS middleware with options -> todo restrict for katscan and localhost
 app.use(cors());
 app.use(express.json());
 
-app.use('/logos', express.static(path.join(filepath, 'krc20-logos')))
+app.use('/static', staticRouter)
 
 app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});

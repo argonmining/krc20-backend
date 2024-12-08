@@ -14,7 +14,7 @@ interface TransactionQuery {
     endDate: string;
 }
 
-router.get('/api/transactions', async (req, res) => {
+router.get('/transactions', async (req, res) => {
     try {
         const {tick, startDate, endDate} = z.object({
             tick: tickSchema,
