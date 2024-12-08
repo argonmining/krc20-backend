@@ -10,11 +10,10 @@ dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-const url = process.env.SERVERURL || '0.0.0.0';
+const port = process.env.PORT || 3000;
 const filepath = process.env.FILESYSTEMDIR || '/var/www/';
 
-// Use CORS middleware with options
+// Use CORS middleware with options -> todo restrict for katscan and localhost
 app.use(cors());
 app.use(express.json());
 
@@ -24,8 +23,8 @@ app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});
 });
 
-app.listen(port, url, 5, async () => {
-    console.log(`Server is running on port ${port} ${url}`);
+app.listen(port, async () => {
+    console.log(`Server is running on port ${port}`);
 });
 
 interface MulterRequest extends Request {
