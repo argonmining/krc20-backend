@@ -14,7 +14,7 @@ const port = process.env.PORT || 3000;
 const staticRouter = require('./routes/staticRoutes')
 
 // Use CORS middleware with options -> todo restrict for katscan and localhost
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 
 app.use('/static', staticRouter)
