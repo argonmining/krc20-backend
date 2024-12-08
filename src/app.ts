@@ -55,17 +55,9 @@ app.get('/api/logos/:ticker', async (req, res) => {
     }
 });
 
-const tokenRouter = require('./routes/token')
-const databaseRouter = require('./routes/database')
-const mintingRouter = require('./routes/minting')
-const holdersRouter = require('./routes/holders')
-const transactionsRouter = require('./routes/transactions')
+const apiRouter = require('./routes/apiRoutes')
 
-app.use('/api', tokenRouter)
-app.use('/api', databaseRouter)
-app.use('/api', mintingRouter)
-app.use('/api', holdersRouter)
-app.use('/api', transactionsRouter)
+app.use('/api', apiRouter)
 
 // Set up multer for file uploads
 const uploadDir = process.env.FILESYSTEMDIR + '/krc20-logos'; // Ensure this path matches your Nginx alias

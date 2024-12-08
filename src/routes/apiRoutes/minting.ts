@@ -1,8 +1,8 @@
 import express from 'express';
 import {PrismaClient} from '@prisma/client';
 import {z} from "zod";
-import logger from "../utils/logger";
-import {fetchAndStorePriceData} from "../services/kasplex";
+import logger from "../../utils/logger";
+import {fetchAndStorePriceData} from "../../services/kasplex";
 
 const router = express.Router()
 const prisma = new PrismaClient();

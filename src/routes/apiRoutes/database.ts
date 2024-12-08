@@ -1,7 +1,7 @@
 import express from 'express';
 import {z} from "zod";
-import logger from "../utils/logger";
-import {updateDatabase, updateDatabaseForTicker} from "../services/kasplex";
+import logger from "../../utils/logger";
+import {updateDatabase, updateDatabaseForTicker} from "../../services/kasplex";
 
 const router = express.Router()
 let isUpdating = false;

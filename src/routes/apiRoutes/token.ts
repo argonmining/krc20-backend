@@ -1,82 +1,12 @@
 import express from 'express';
 import {PrismaClient} from '@prisma/client';
 import {z} from "zod";
-import logger from "../utils/logger";
+import logger from "../../utils/logger";
 import path from "path";
 
 const router = express.Router()
 const prisma = new PrismaClient();
 const tickSchema = z.string().min(1);
-
-router.get('/token/:tick', async (req, res) => {
-    try {
-        const {tick} = z.object({tick: tickSchema}).parse(req.params);
-
-        // Fetch the token details
-        const token = await prisma.token.findUnique({
-            where: {tick},
-            select: {
-                tick: true,
-                max: true,
-                lim: true,
-                pre: true,
-                to: true,
-                dec: true,
-                minted: true,
-                opScoreAdd: true,
-                opScoreMod: true,
-                state: true,
-                hashRev: true,
-                mtsAdd: true,
-                holderTotal: true,
-                transferTotal: true,
-                mintTotal: true,
-                lastUpdated: true,
-                logo: true,
-            },
-        });
-
-        if (!token) {
-            return res.status(404).json({error: 'Token not found'});
-        }
-
-        // Fetch the balances related to the token
-        const balances = await prisma.balance.findMany({
-            where: {tokenTick: tick},
-            select: {
-                balance: true,
-                holder: {
-                    select: {
-                        address: true,
-                    },
-                },
-            },
-        });
-
-        // Construct the "holder" array
-        const holderArray = balances.map(balance => ({
-            address: balance.holder.address,
-            amount: balance.balance,
-        }));
-
-        // Add the "holder" array to the token response
-        const tokenWithHolders = {
-            ...token,
-            holder: holderArray,
-        };
-
-        res.json({result: tokenWithHolders});
-    } catch (error) {
-        logger.error('Error fetching token:', error);
-        if (error instanceof z.ZodError) {
-            res.status(400).json({error: 'Invalid input', details: error.errors});
-        } else if (error instanceof Error) {
-            res.status(500).json({error: 'Internal server error', message: error.message});
-        } else {
-            res.status(500).json({error: 'Internal server error'});
-        }
-    }
-});
 
 router.get('/TokenPriceData', async (req, res) => {
     try {
@@ -179,7 +109,7 @@ router.get('/tickers', async (req, res) => {
 router.get('/tokenlist', async (req, res) => {
     console.log('tokenlist')
     try {
-        const { limit = 100, cursor, sortBy = 'holderTotal', sortOrder = 'desc' } = req.query;
+        const {limit = 100, cursor, sortBy = 'holderTotal', sortOrder = 'desc'} = req.query;
 
         // Convert limit to a number
         const take = parseInt(limit as string, 10);
@@ -237,6 +167,75 @@ router.get('/tokenlist', async (req, res) => {
     } catch (error) {
         logger.error('Error fetching token list:', error);
         res.status(500).json({error: 'Internal server error'});
+    }
+});
+router.get('/:tick', async (req, res) => {
+    try {
+        const {tick} = z.object({tick: tickSchema}).parse(req.params);
+
+        // Fetch the token details
+        const token = await prisma.token.findUnique({
+            where: {tick},
+            select: {
+                tick: true,
+                max: true,
+                lim: true,
+                pre: true,
+                to: true,
+                dec: true,
+                minted: true,
+                opScoreAdd: true,
+                opScoreMod: true,
+                state: true,
+                hashRev: true,
+                mtsAdd: true,
+                holderTotal: true,
+                transferTotal: true,
+                mintTotal: true,
+                lastUpdated: true,
+                logo: true,
+            },
+        });
+
+        if (!token) {
+            return res.status(404).json({error: 'Token not found'});
+        }
+
+        // Fetch the balances related to the token
+        const balances = await prisma.balance.findMany({
+            where: {tokenTick: tick},
+            select: {
+                balance: true,
+                holder: {
+                    select: {
+                        address: true,
+                    },
+                },
+            },
+        });
+
+        // Construct the "holder" array
+        const holderArray = balances.map(balance => ({
+            address: balance.holder.address,
+            amount: balance.balance,
+        }));
+
+        // Add the "holder" array to the token response
+        const tokenWithHolders = {
+            ...token,
+            holder: holderArray,
+        };
+
+        res.json({result: tokenWithHolders});
+    } catch (error) {
+        logger.error('Error fetching token:', error);
+        if (error instanceof z.ZodError) {
+            res.status(400).json({error: 'Invalid input', details: error.errors});
+        } else if (error instanceof Error) {
+            res.status(500).json({error: 'Internal server error', message: error.message});
+        } else {
+            res.status(500).json({error: 'Internal server error'});
+        }
     }
 });
 
