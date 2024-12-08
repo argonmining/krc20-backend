@@ -13,8 +13,15 @@ const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
 const staticRouter = require('./routes/staticRoutes')
 
-// Use CORS middleware with options -> todo restrict for katscan and localhost
-app.use(cors());
+// Define CORS options
+const corsOptions = {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*', // Allow specific origins or all
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
+};
+
+// Use CORS middleware with options
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use('/static', staticRouter)
