@@ -12,10 +12,13 @@ const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const url = process.env.SERVERURL || '0.0.0.0';
+const filepath = process.env.FILESYSTEMDIR || '/var/www/';
 
 // Use CORS middleware with options
 app.use(cors());
 app.use(express.json());
+
+app.use('/logos', express.static(path.join(filepath, 'krc20-logos')))
 
 app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});
