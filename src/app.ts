@@ -70,7 +70,8 @@ const apiRouter = require('./routes/apiRoutes')
 app.use('/api', apiRouter)
 
 // Set up multer for file uploads
-const uploadDir = process.env.FILESYSTEMDIR + '/krc20-logos'; // Ensure this path matches your Nginx alias
+const uploadDir = process.env.FILESYSTEMDIR || '/var/www/krc20-logos'; // Provide a default value
+
 const storage = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
         cb(null, uploadDir);
