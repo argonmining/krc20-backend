@@ -11,7 +11,14 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
-const staticRouter = require('./routes/staticRoutes')
+
+// Import routers
+const staticRouter = require('./routes/staticRoutes');
+const databaseRouter = require('./routes/apiRoutes/database');
+const holdersRouter = require('./routes/apiRoutes/holders');
+const mintingRouter = require('./routes/apiRoutes/minting');
+const tokenRouter = require('./routes/apiRoutes/token');
+const transactionsRouter = require('./routes/apiRoutes/transactions');
 
 // Define CORS options
 const corsOptions = {
@@ -26,6 +33,13 @@ app.use(express.json());
 
 // Ensure CORS is applied before static files
 app.use('/static', staticRouter);
+
+// Use the routers
+app.use('/api/database', databaseRouter);
+app.use('/api/holders', holdersRouter);
+app.use('/api/minting', mintingRouter);
+app.use('/api/token', tokenRouter);
+app.use('/api/transactions', transactionsRouter);
 
 app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});
@@ -64,10 +78,6 @@ app.get('/api/logos/:ticker', async (req, res) => {
         res.status(500).json({error: 'Internal server error'});
     }
 });
-
-const apiRouter = require('./routes/apiRoutes')
-
-app.use('/api', apiRouter)
 
 // Set up multer for file uploads
 const uploadDir = process.env.FILESYSTEMDIR || '/var/www/krc20-logos'; // Provide a default value
