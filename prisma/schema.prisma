@@ -86,3 +86,11 @@ model PriceData {
 
   @@index([tick, timestamp])
 }
+
+model Announcements {
+ id             Int         @id @default(autoincrement())
+ title          String
+ text           String?
+ imageUrl       String?
+ timestamp      DateTime    @default(now())
+}

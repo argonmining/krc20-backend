@@ -7,11 +7,13 @@ const databaseRouter = require('./apiRoutes/database')
 const mintingRouter = require('./apiRoutes/minting')
 const holdersRouter = require('./apiRoutes/holders')
 const transactionsRouter = require('./apiRoutes/transactions')
+const announcementsRouter = require('./apiRoutes/announcements')
 
 router.use('/token', tokenRouter)
 router.use('/minting', mintingRouter)
 router.use('/holders', holdersRouter)
 router.use('/transactions', transactionsRouter)
+router.use('/announcements', announcementsRouter)
 // todo add auth for databaseactions
 router.use('/database', databaseRouter)
 
