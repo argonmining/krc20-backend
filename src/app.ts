@@ -72,7 +72,7 @@ app.get('/api/logos/:ticker', async (req, res) => {
 });
 
 // Set up multer for file uploads
-const uploadDir = process.env.FILESYSTEMDIR || '/var/www/krc20-logos'; // Provide a default value
+const uploadDir = process.env.FILESYSTEMDIR + '/krc20-logos' || '/var/www/krc20-logos'; // Provide a default value
 
 const storage = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
