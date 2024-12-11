@@ -17,8 +17,20 @@ router.get('/announcements/:filename', (req, res, next) => {
     next()
 }, async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
 
-router.use('/logos', express.static(path.join(filepath, '/krc20-logos')))
-router.use('/announcements', express.static(path.join(filepath, '/announcements')))
+router.use('/logos', (req, res, next) => {
+    console.log({
+        'req:': req,
+        'res': res
+    })
+    next()
+}, express.static(path.join(filepath, '/krc20-logos')))
+router.use('/announcements', (req, res, next) => {
+    console.log({
+        'req:': req,
+        'res': res
+    })
+    next()
+}, express.static(path.join(filepath, '/announcements')))
 
 const loadFile = (req: Request, res: Response, contentPath: string) => {
     const {filename} = req.params
