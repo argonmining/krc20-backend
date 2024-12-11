@@ -9,6 +9,7 @@ const filepath = process.env.FILESYSTEMDIR || '/var/www';
 const loadFile = (req: Request, res: Response, contentPath: string) => {
     const {filename} = req.params
     const pathToFile = path.join(filepath, contentPath, filename)
+    logger.error(pathToFile)
 
     if (fs.existsSync(pathToFile)) {
         logger.info(pathToFile + " exists")
