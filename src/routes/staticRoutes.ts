@@ -5,7 +5,7 @@ import path from "path";
 
 const router = express.Router()
 // const filepath = process.env.FILESYSTEMDIR || '\\var\\www';
-const filepath = '\\var\\www';
+const filepath = '/var/www';
 
 const loadFile = (req: Request, res: Response, contentPath: string) => {
     const {filename} = req.params
@@ -23,7 +23,13 @@ const loadFile = (req: Request, res: Response, contentPath: string) => {
 router.use('/logos', express.static(path.join(filepath, '\\krc20-logos')))
 router.use('/announcements', express.static(path.join(filepath, '\\announcements')))
 
-// router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
-// router.get('/announcements/:filename', async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
+router.get('/logos/:filename', (req, res, next) => {
+    console.log({
+        'req:': req,
+        'res': res
+    })
+    next()
+}, async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
+router.get('/announcements/:filename', async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
 
 module.exports = router

@@ -15,7 +15,6 @@ const port = process.env.PORT || 3000;
 // Import routers
 const staticRouter = require('./routes/staticRoutes');
 const apiRouter = require('./routes/apiRoutes');
-const filepath = '/var/www';
 
 // Define CORS options
 const corsOptions = {
@@ -29,9 +28,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Ensure CORS is applied before static files
-app.use('/static/logos', express.static(path.join(filepath, '/krc20-logos')));
-app.use('/static/announcements', express.static(path.join(filepath, '//announcements')));
-// router.use('', ))
+app.use('/static', staticRouter);
 
 // Use the routers
 app.use('/api', apiRouter);
