@@ -21,7 +21,7 @@ const loadFile = (req: Request, res: Response, contentPath: string) => {
 // router.use(express.static(path.join(filepath, '/krc20-logos')))
 // router.use(express.static(path.join(filepath, '/announcements')))
 
-router.use('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
-router.use('/announcements/:filename', async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
+router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
+router.get('/announcements/:filename', async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
 
 module.exports = router
