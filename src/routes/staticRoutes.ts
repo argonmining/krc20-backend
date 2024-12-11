@@ -1,7 +1,7 @@
 import express, {Request, Response} from 'express';
-import path from "path";
 import * as fs from "fs";
 import logger from "../utils/logger";
+import path from "path";
 
 const router = express.Router()
 const filepath = process.env.FILESYSTEMDIR || '/var/www';
@@ -19,8 +19,8 @@ const loadFile = (req: Request, res: Response, contentPath: string) => {
     return res.status(404).json({error: 'Content not found'})
 }
 
-// router.use(express.static(path.join(filepath, '/krc20-logos')))
-// router.use(express.static(path.join(filepath, '/announcements')))
+router.use(express.static(path.join(filepath, '/krc20-logos')))
+router.use(express.static(path.join(filepath, '/announcements')))
 
 router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
 router.get('/announcements/:filename', async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
