@@ -32,7 +32,7 @@ app.use(function (req, res, next) {
 });
 
 // Use the routers
-app.use('/static', staticRouter);
+app.use('/data', staticRouter);
 app.use('/api', apiRouter);
 
 app.get('/health', (req, res) => {
