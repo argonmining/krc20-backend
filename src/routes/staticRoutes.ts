@@ -7,16 +7,6 @@ const router = express.Router()
 // const filepath = process.env.FILESYSTEMDIR || '\\var\\www';
 const filepath = '/var/www/static';
 
-
-router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
-router.get('/announcements/:filename', (req, res, next) => {
-    console.log({
-        'req:': req,
-        'res': res
-    })
-    next()
-}, async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
-
 router.use('/logos', (req, res, next) => {
     console.log({
         'req:': req,
@@ -31,6 +21,17 @@ router.use('/announcements', (req, res, next) => {
     })
     next()
 }, express.static(path.join(filepath, '/announcements')))
+
+// router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
+// router.get('/announcements/:filename', (req, res, next) => {
+//     console.log({
+//         'req:': req,
+//         'res': res
+//     })
+//     next()
+// }, async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
+
+
 
 const loadFile = (req: Request, res: Response, contentPath: string) => {
     const {filename} = req.params
