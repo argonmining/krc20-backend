@@ -24,7 +24,7 @@ const corsOptions = {
 };
 
 // Use CORS middleware with options
-// app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
 // Ensure CORS is applied before static files
