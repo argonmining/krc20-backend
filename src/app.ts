@@ -26,6 +26,10 @@ const corsOptions = {
 // Use CORS middleware with options
 app.use(cors());
 app.use(express.json());
+app.use(function (req, res, next) {
+    logger.warn('middleware:', req);
+    next();
+});
 
 // Ensure CORS is applied before static files
 app.use('/static', (req, res, next) => {
