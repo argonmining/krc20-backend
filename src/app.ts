@@ -18,9 +18,9 @@ const apiRouter = require('./routes/apiRoutes');
 
 // Define CORS options
 const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*', // Allow specific origins or all
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
+    origin: '*', // Allow all origins
+    methods: '*', // Allow all methods
+    allowedHeaders: '*', // Allow all headers
 };
 
 // Use CORS middleware with options
