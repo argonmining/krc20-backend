@@ -32,8 +32,8 @@ app.use(function (req, res, next) {
 });
 
 // Use the routers
-app.use('/data', staticRouter);
 app.use('/api', apiRouter);
+app.use('/static', staticRouter);
 
 app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});
