@@ -1,5 +1,4 @@
 import express from 'express';
-import staticRouter from "./staticRoutes";
 
 const router = express.Router()
 
