@@ -28,9 +28,11 @@ router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(r
 router.get('/announcements/:filename', (req, res, next) => {
     logger.warn('announce')
     next()
-}, async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
+}, async (req: Request, res: Response) => {
+    logger.warn("announcement request")
+})
 
-
+// loadFile(req, res, '/announcements')
 
 const loadFile = (req: Request, res: Response, contentPath: string) => {
     const {filename} = req.params
