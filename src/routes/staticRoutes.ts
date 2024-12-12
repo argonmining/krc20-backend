@@ -5,7 +5,7 @@ import path from "path";
 
 const router = express.Router()
 // const filepath = process.env.FILESYSTEMDIR || '\\var\\www';
-const filepath = '/var/www';
+const filepath = '/var/www/static';
 
 
 router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
