@@ -8,14 +8,16 @@ const router = express.Router()
 const filepath = '/var/www/static';
 
 router.use('/logos', (req, res, next) => {
-    console.log({
+    logger.warn('logo')
+    logger.warn({
         'req:': req,
         'res': res
     })
     next()
 }, express.static(path.join(filepath, '/krc20-logos')))
 router.use('/announcements', (req, res, next) => {
-    console.log({
+    logger.warn('announce')
+    logger.warn({
         'req:': req,
         'res': res
     })
