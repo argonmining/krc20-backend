@@ -13,7 +13,6 @@ const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
 
 // Import routers
-const staticRouter = require('./routes/staticRoutes');
 const apiRouter = require('./routes/apiRoutes');
 
 // Define CORS options
@@ -33,7 +32,6 @@ app.use(function (req, res, next) {
 
 // Use the routers
 app.use('/api', apiRouter);
-app.use('/static', staticRouter);
 
 app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});
