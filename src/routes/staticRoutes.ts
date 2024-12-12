@@ -27,10 +27,6 @@ const filepath = '/var/www/static';
 router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
 router.get('/announcements/:filename', (req, res, next) => {
     logger.warn('announce')
-    logger.warn({
-        'req:': req,
-        'res': res
-    })
     next()
 }, async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
 

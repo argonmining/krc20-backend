@@ -29,10 +29,7 @@ app.use(express.json());
 
 // Ensure CORS is applied before static files
 app.use('/static', (req, res, next) => {
-    logger.warn({
-        'req:': req,
-        'res': res
-    })
+    logger.warn('static')
     next()
 },staticRouter);
 
