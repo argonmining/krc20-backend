@@ -24,26 +24,27 @@ const filepath = '/var/www/static';
 //     next()
 // }, express.static(path.join(filepath, '/announcements')))
 
-router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
-router.get('/announcements/:filename', (req, res, next) => {
+// router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
+router.get('/announcements/:filename', (req: Request, res: Response, next) => {
     logger.warn('announce')
     next()
 }, async (req: Request, res: Response) => {
     logger.warn("announcement request")
+    res.json("ok");
 })
 
 // loadFile(req, res, '/announcements')
 
-const loadFile = (req: Request, res: Response, contentPath: string) => {
-    const {filename} = req.params
-    const pathToFile = `${filepath}${contentPath}/${filename}`
-    logger.error(pathToFile)
-
-    if (fs.existsSync(pathToFile)) {
-        logger.info(pathToFile + " exists")
-        return res.sendFile(pathToFile)
-    }
-    logger.info(pathToFile + " not exists")
-    return res.status(404).json({error: 'Content not found'})
-}
+// const loadFile = (req: Request, res: Response, contentPath: string) => {
+//     const {filename} = req.params
+//     const pathToFile = `${filepath}${contentPath}/${filename}`
+//     logger.error(pathToFile)
+//
+//     if (fs.existsSync(pathToFile)) {
+//         logger.info(pathToFile + " exists")
+//         return res.sendFile(pathToFile)
+//     }
+//     logger.info(pathToFile + " not exists")
+//     return res.status(404).json({error: 'Content not found'})
+// }
 module.exports = router
