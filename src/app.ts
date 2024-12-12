@@ -31,13 +31,8 @@ app.use(function (req, res, next) {
     next();
 });
 
-// Ensure CORS is applied before static files
-app.use('/static', (req, res, next) => {
-    logger.warn('static')
-    next()
-},staticRouter);
-
 // Use the routers
+app.use('/static', staticRouter);
 app.use('/api', apiRouter);
 
 app.get('/health', (req, res) => {
