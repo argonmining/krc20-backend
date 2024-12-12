@@ -28,7 +28,13 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Ensure CORS is applied before static files
-app.use('/static', staticRouter);
+app.use('/static', (req, res, next) => {
+    console.log({
+        'req:': req,
+        'res': res
+    })
+    next()
+},staticRouter);
 
 // Use the routers
 app.use('/api', apiRouter);
