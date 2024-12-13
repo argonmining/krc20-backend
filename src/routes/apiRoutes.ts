@@ -15,8 +15,8 @@ router.use('/minting', mintingRouter)
 router.use('/holders', holdersRouter)
 router.use('/transactions', transactionsRouter)
 router.use('/announcements', announcementsRouter)
-
 router.use('/static', staticRouter);
+
 // todo add auth for databaseactions
 router.use('/database', databaseRouter)
 

@@ -21,9 +21,11 @@ const loadFile = (req: Request, res: Response, contentPath: string) => {
 
     if (fs.existsSync(pathToFile)) {
         logger.info(pathToFile + " exists")
-        return res.sendFile(pathToFile)
+        res.sendFile(pathToFile)
+        return
     }
     logger.info(pathToFile + " not exists")
-    return res.status(404).json({error: 'Content not found'})
+    res.status(404).json({error: 'Content not found'})
 }
+
 module.exports = router

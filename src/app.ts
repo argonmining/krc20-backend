@@ -5,7 +5,6 @@ import logger from './utils/logger';
 import multer from 'multer';
 import path from 'path';
 import cors from 'cors'
-import fs from "fs";
 
 dotenv.config();
 
@@ -21,6 +20,7 @@ const corsOptions = {
     origin: '*', // Allow all origins
     methods: '*', // Allow all methods
     allowedHeaders: '*', // Allow all headers
+
 };
 
 // Use CORS middleware with options
@@ -31,31 +31,6 @@ app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 });
 
-const filesystemDir = process.env.FILESYSTEMDIR || '/var/www';
-const filepath =  filesystemDir + '/static';
-
-app.get('/api/static/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
-app.get('/api/static/announcements/:filename', (req: Request, res: Response, next) => {
-    logger.warn('announce')
-    next()
-}, async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
-
-
-const loadFile = (req: Request, res: Response, contentPath: string) => {
-    const {filename} = req.params
-    const pathToFile = `${filepath}${contentPath}/${filename}`
-    logger.warn(pathToFile)
-    const exists = fs.existsSync(pathToFile)
-    logger.warn(exists)
-
-    if (exists) {
-        logger.warn(pathToFile + " exists")
-        res.sendFile(pathToFile)
-    }else {
-        logger.warn(pathToFile + " not exists")
-        res.status(404).json({error: 'Content not found'})
-    }
-}
 // Use the routers
 app.use('/api', apiRouter);
 
