@@ -1,28 +1,10 @@
 import express, {Request, Response} from 'express';
 import * as fs from "fs";
 import logger from "../utils/logger";
-import path from "path";
 
 const router = express.Router()
-// const filepath = process.env.FILESYSTEMDIR || '\\var\\www';
-const filepath = '/var/www/static';
-
-// router.use('/logos', (req, res, next) => {
-//     logger.warn('logo')
-//     logger.warn({
-//         'req:': req,
-//         'res': res
-//     })
-//     next()
-// }, express.static(path.join(filepath, '/krc20-logos')))
-// router.use('/announcements', (req, res, next) => {
-//     logger.warn('announce')
-//     logger.warn({
-//         'req:': req,
-//         'res': res
-//     })
-//     next()
-// }, express.static(path.join(filepath, '/announcements')))
+const filesystemDir = process.env.FILESYSTEMDIR || '/var/www';
+const filepath =  filesystemDir + '/static';
 
 router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
 router.get('/announcements/:filename', (req: Request, res: Response, next) => {
@@ -34,7 +16,8 @@ router.get('/announcements/:filename', (req: Request, res: Response, next) => {
 const loadFile = (req: Request, res: Response, contentPath: string) => {
     const {filename} = req.params
     const pathToFile = `${filepath}${contentPath}/${filename}`
-    logger.error(pathToFile)
+    logger.warn(pathToFile)
+    logger.warn(fs.existsSync(pathToFile))
 
     if (fs.existsSync(pathToFile)) {
         logger.info(pathToFile + " exists")
