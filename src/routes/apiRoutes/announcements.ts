@@ -31,7 +31,7 @@ const upload = multer({storage});
 // Endpoint to upload a new logo and update the database
 router.post('/create', upload.single('image'), async (req: Request, res: Response) => {
     try {
-        if (req.body?.title === undefined){
+        if (req.body?.title === undefined) {
             res.status(500).json({message: 'No Title',});
         }
 
@@ -42,9 +42,10 @@ router.post('/create', upload.single('image'), async (req: Request, res: Respons
                 timestamp: new Date(),
             },
         });
-        if (req.file){
+        if (req.file) {
             // Construct the logo URL
-            const announcementUrl = `/announcements/${req.file?.originalname}`;
+            const url = req.file.originalname.split('.')
+            const announcementUrl = `/announcements/${url[0]}/${url[1]}`;
             await prisma.announcements.update({
                 where: {id: announcement.id},
                 data: {imageUrl: announcementUrl}
