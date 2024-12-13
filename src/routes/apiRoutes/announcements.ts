@@ -15,7 +15,7 @@ router.get('/all', async (req, res) => {
     res.json({result: announcements})
 })
 // Set up multer for file uploads
-const uploadDir = (process.env.FILESYSTEMDIR ?? '/var/www') + '/announcements'; // Provide a default value
+const uploadDir = (process.env.FILESYSTEMDIR ?? '/var/www') + '/static/announcements'; // Provide a default value
 
 const storage = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
