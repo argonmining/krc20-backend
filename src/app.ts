@@ -24,7 +24,7 @@ const corsOptions = {
 };
 
 // Use CORS middleware with options
-// app.use(cors());
+app.use(cors());
 app.use(express.json());
 
 app.listen(port, async () => {
