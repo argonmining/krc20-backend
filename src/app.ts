@@ -45,14 +45,16 @@ const loadFile = (req: Request, res: Response, contentPath: string) => {
     const {filename} = req.params
     const pathToFile = `${filepath}${contentPath}/${filename}`
     logger.warn(pathToFile)
-    logger.warn(fs.existsSync(pathToFile))
+    const exists = fs.existsSync(pathToFile)
+    logger.warn(exists)
 
-    if (fs.existsSync(pathToFile)) {
+    if (exists) {
         logger.warn(pathToFile + " exists")
-        return res.sendFile(pathToFile)
+        res.sendFile(pathToFile)
+    }else {
+        logger.warn(pathToFile + " not exists")
+        res.status(404).json({error: 'Content not found'})
     }
-    logger.warn(pathToFile + " not exists")
-    return res.status(404).json({error: 'Content not found'})
 }
 // Use the routers
 app.use('/api', apiRouter);
