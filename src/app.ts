@@ -26,15 +26,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+app.listen(port, async () => {
+    console.log(`Server is running on port ${port}`);
+});
+
+
 // Use the routers
 app.use('/api', apiRouter);
 
 app.get('/health', (req, res) => {
     res.status(200).json({status: 'OK'});
-});
-
-app.listen(port, async () => {
-    console.log(`Server is running on port ${port}`);
 });
 
 interface MulterRequest extends Request {
