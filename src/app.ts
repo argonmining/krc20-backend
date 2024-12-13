@@ -5,6 +5,7 @@ import logger from './utils/logger';
 import multer from 'multer';
 import path from 'path';
 import cors from 'cors'
+import fs from "fs";
 
 dotenv.config();
 
@@ -30,7 +31,29 @@ app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
 });
 
+const filesystemDir = process.env.FILESYSTEMDIR || '/var/www';
+const filepath =  filesystemDir + '/static';
 
+app.get('/api/static/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
+app.get('/api/static/announcements/:filename', (req: Request, res: Response, next) => {
+    logger.warn('announce')
+    next()
+}, async (req: Request, res: Response) => loadFile(req, res, '/announcements'))
+
+
+const loadFile = (req: Request, res: Response, contentPath: string) => {
+    const {filename} = req.params
+    const pathToFile = `${filepath}${contentPath}/${filename}`
+    logger.warn(pathToFile)
+    logger.warn(fs.existsSync(pathToFile))
+
+    if (fs.existsSync(pathToFile)) {
+        logger.info(pathToFile + " exists")
+        return res.sendFile(pathToFile)
+    }
+    logger.info(pathToFile + " not exists")
+    return res.status(404).json({error: 'Content not found'})
+}
 // Use the routers
 app.use('/api', apiRouter);
 
