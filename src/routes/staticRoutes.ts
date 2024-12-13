@@ -1,10 +1,11 @@
 import express, {Request, Response} from 'express';
 import * as fs from "fs";
 import logger from "../utils/logger";
+import path from "path";
 
 const router = express.Router()
 const filesystemDir = process.env.FILESYSTEMDIR || '/var/www';
-const filepath =  filesystemDir + '/static';
+const filepath = filesystemDir + '/static';
 
 router.get('/logos/:filename', async (req: Request, res: Response) => loadFile(req, res, '/krc20-logos'))
 router.get('/announcements/:filename', (req: Request, res: Response, next) => {
@@ -21,11 +22,23 @@ const loadFile = (req: Request, res: Response, contentPath: string) => {
 
     if (fs.existsSync(pathToFile)) {
         logger.info(pathToFile + " exists")
-        res.sendFile(pathToFile)
+
+        const options = {
+            root: `${filepath}${contentPath}`
+        };
+
+        res.sendFile(filename, options, function (err) {
+            if (err) {
+                console.error('Error sending file:', err);
+            } else {
+                console.log('Sent:', filename);
+            }
+        });
         return
+    } else {
+        logger.info(pathToFile + " not exists")
+        res.status(404).json({error: 'Content not found'})
     }
-    logger.info(pathToFile + " not exists")
-    res.status(404).json({error: 'Content not found'})
 }
 
 module.exports = router
