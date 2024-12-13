@@ -45,6 +45,8 @@ router.post('/create', upload.single('image'), async (req: Request, res: Respons
         if (req.file) {
             // Construct the logo URL
             const url = req.file.originalname.split('.')
+            logger.warn(url[0])
+            logger.warn(url[1])
             const announcementUrl = `/announcements/${url[0]}/${url[1]}`;
             await prisma.announcements.update({
                 where: {id: announcement.id},
