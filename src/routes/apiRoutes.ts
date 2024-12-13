@@ -8,7 +8,7 @@ const mintingRouter = require('./apiRoutes/minting')
 const holdersRouter = require('./apiRoutes/holders')
 const transactionsRouter = require('./apiRoutes/transactions')
 const announcementsRouter = require('./apiRoutes/announcements')
-const staticRouter = require('./routes/staticRoutes');
+const staticRouter = require('./staticRoutes');
 
 router.use('/token', tokenRouter)
 router.use('/minting', mintingRouter)
