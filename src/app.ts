@@ -48,10 +48,10 @@ const loadFile = (req: Request, res: Response, contentPath: string) => {
     logger.warn(fs.existsSync(pathToFile))
 
     if (fs.existsSync(pathToFile)) {
-        logger.info(pathToFile + " exists")
+        logger.warn(pathToFile + " exists")
         return res.sendFile(pathToFile)
     }
-    logger.info(pathToFile + " not exists")
+    logger.warn(pathToFile + " not exists")
     return res.status(404).json({error: 'Content not found'})
 }
 // Use the routers
