@@ -52,7 +52,10 @@ router.post('/create', upload.single('image'), async (req: Request, res: Respons
             const announcementUrl = `/announcements/${announcement.id}/${url[1]}`;
             await prisma.announcements.update({
                 where: {id: announcement.id},
-                data: {imageUrl: announcementUrl}
+                data: {
+                    imageUrl: announcementUrl,
+                    link: req.body.link
+                }
             });
 
         }
