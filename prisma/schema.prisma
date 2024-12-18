@@ -92,5 +92,6 @@ model Announcements {
  title          String
  text           String?
  imageUrl       String?
+ link           String?
  timestamp      DateTime    @default(now())
 }

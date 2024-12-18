@@ -2,6 +2,7 @@ import express, {Request, Response} from 'express';
 import {PrismaClient} from '@prisma/client';
 import multer from "multer";
 import logger from "../../utils/logger";
+import * as fs from "fs";
 
 const router = express.Router()
 const prisma = new PrismaClient();
@@ -45,9 +46,10 @@ router.post('/create', upload.single('image'), async (req: Request, res: Respons
         if (req.file) {
             // Construct the logo URL
             const url = req.file.originalname.split('.')
-            logger.warn(url[0])
-            logger.warn(url[1])
-            const announcementUrl = `/announcements/${url[0]}/${url[1]}`;
+            //rename the image to the id
+            fs.renameSync(`${uploadDir}/${req.file.originalname}`, `${uploadDir}/${announcement.id}.${url[1]}`);
+
+            const announcementUrl = `/announcements/${announcement.id}/${url[1]}`;
             await prisma.announcements.update({
                 where: {id: announcement.id},
                 data: {imageUrl: announcementUrl}
