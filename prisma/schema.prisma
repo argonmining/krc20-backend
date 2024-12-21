@@ -95,3 +95,14 @@ model Announcements {
  link           String?
  timestamp      DateTime    @default(now())
 }
+
+model Whitelist {
+  id              Int      @id @default(autoincrement())
+  address         String   @unique
+  updatedBy       String   
+  updatedAt       DateTime @default(now())
+  previousAddress String?  
+  signature       String   
+  active          Boolean  @default(true)
+  changeType      String   
+}
