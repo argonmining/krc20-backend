@@ -13,40 +13,34 @@ const prisma = new PrismaClient();
 const port = process.env.PORT || 3000;
 
 // Import routers
-const staticRouter = require('./routes/staticRoutes');
-const databaseRouter = require('./routes/apiRoutes/database');
-const holdersRouter = require('./routes/apiRoutes/holders');
-const mintingRouter = require('./routes/apiRoutes/minting');
-const tokenRouter = require('./routes/apiRoutes/token');
-const transactionsRouter = require('./routes/apiRoutes/transactions');
+const apiRouter = require('./routes/apiRoutes');
 
 // Define CORS options
 const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*', // Allow specific origins or all
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
+    origin: '*', // Allow all origins
+    methods: '*', // Allow all methods
+    allowedHeaders: '*', // Allow all headers
+
 };
 
 // Use CORS middleware with options
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
-// Ensure CORS is applied before static files
-app.use('/static', staticRouter);
-
-// Use the routers
-app.use('/api/database', databaseRouter);
-app.use('/api/holders', holdersRouter);
-app.use('/api/minting', mintingRouter);
-app.use('/api/token', tokenRouter);
-app.use('/api/transactions', transactionsRouter);
-
-app.get('/health', (req, res) => {
-    res.status(200).json({status: 'OK'});
+app.use((req, res, next) => {
+    logger.info(`Incoming request: ${req.method} ${req.url}`);
+    next();
 });
 
 app.listen(port, async () => {
     console.log(`Server is running on port ${port}`);
+});
+
+// Use the routers
+app.use('/api', apiRouter);
+
+app.get('/health', (req, res) => {
+    res.status(200).json({status: 'OK'});
 });
 
 interface MulterRequest extends Request {
@@ -80,7 +74,7 @@ app.get('/api/logos/:ticker', async (req, res) => {
 });
 
 // Set up multer for file uploads
-const uploadDir = process.env.FILESYSTEMDIR || '/var/www/krc20-logos'; // Provide a default value
+const uploadDir = process.env.FILESYSTEMDIR + '/static/krc20-logos' || '/var/www/static/krc20-logos'; // Provide a default value
 
 const storage = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
